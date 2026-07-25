@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: one_postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: one
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d one"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: one_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: one_livekit
+    command: --dev --bind 0.0.0.0
+    ports:
+      - "7880:7880"   # HTTP API
+      - "7881:7881"   # RTC over TCP
+      - "7882:7882/udp" # RTC over UDP
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
