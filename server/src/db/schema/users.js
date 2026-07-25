@@ -9,8 +9,7 @@ export const users = pgTable("users", {
     bio: varchar("bio", { length: 255 }),
     email: varchar("email", { length: 255 }).notNull().unique(),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
-    passwordHash: text("password_hash").notNull(),
-    passkeyEnrolled: boolean("passkey_enrolled").notNull().default(false),
+    passwordHash: text("password_hash"),
     passwordResetNonce: text("password_reset_nonce"),
     createdAt: timestamp("created_at", { withTimezone: true })
         .notNull()

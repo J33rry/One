@@ -25,7 +25,6 @@ export async function findMeById(id) {
         .select({
             ...publicColumns,
             email: users.email,
-            passkeyEnrolled: users.passkeyEnrolled,
         })
         .from(users)
         .where(and(eq(users.id, id), isNull(users.deletedAt)))

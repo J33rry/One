@@ -7,7 +7,6 @@ export interface User {
   avatarUrl: string | null;
   bio: string | null;
   email: string;
-  passkeyEnrolled: boolean;
   createdAt: string;
 }
 

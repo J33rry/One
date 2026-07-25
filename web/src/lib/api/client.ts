@@ -13,20 +13,15 @@ export class ApiError extends Error {
 export const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002/api/v1";
 
-interface FetchOptions extends RequestInit {
-    mfaToken?: string;
-}
-
 export async function apiClient<T>(
     endpoint: string,
-    { mfaToken, headers, ...customConfig }: FetchOptions = {},
+    { headers, ...customConfig }: RequestInit = {},
 ): Promise<T> {
     const config: RequestInit = {
         method: customConfig.method || "GET",
         ...customConfig,
         headers: {
             "Content-Type": "application/json",
-            ...(mfaToken ? { Authorization: `Bearer ${mfaToken}` } : {}),
             ...headers,
         },
         // Required for sending/receiving the connect.sid session cookie

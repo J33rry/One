@@ -9,7 +9,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import { startAuthentication } from "@simplewebauthn/browser";
 
 const resetSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
@@ -33,16 +32,8 @@ function ResetPasswordForm() {
     mutationFn: async (data: ResetFormValues) => {
       if (!token) throw new Error("Missing reset token");
 
-      // 1. Get WebAuthn options using the email reset token
-      const { options, mfaToken } = await authApi.getResetPasswordOptions(token);
-      
-      // 2. Interact with browser authenticator
-      const credential = await startAuthentication({ optionsJSON: options });
-      
-      // 3. Verify and set new password
-      return authApi.verifyResetPassword({
-        mfaToken,
-        credential,
+      return authApi.resetPassword({
+        resetToken: token,
         newPassword: data.password,
       });
     },
@@ -82,9 +73,9 @@ function ResetPasswordForm() {
 
   return (
     <>
-      <h3 className="text-xl font-bold mb-6 text-white">Choose a new password</h3>
+      <h3 className="text-xl font-bold mb-6 text-white text-center">Choose a new password</h3>
       {errorMsg && (
-        <div className="mb-4 p-3 rounded bg-red-500/10 text-red-500 text-sm border border-red-500/20">
+        <div className="mb-4 p-3 rounded bg-red-500/10 text-red-500 text-sm border border-red-500/20 text-center">
           {errorMsg}
         </div>
       )}
@@ -95,7 +86,7 @@ function ResetPasswordForm() {
           <input
             {...register("password")}
             type="password"
-            className="mt-1 block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm px-3 py-2"
+            className="mt-1 block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm px-3 py-2 outline-none"
           />
           {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password.message}</p>}
         </div>
@@ -103,17 +94,11 @@ function ResetPasswordForm() {
         <button
           type="submit"
           disabled={resetMutation.isPending}
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50"
+          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 transition-colors"
         >
           {resetMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : "Reset password"}
         </button>
       </form>
-      
-      {resetMutation.isPending && (
-        <p className="mt-4 text-center text-sm text-zinc-400">
-          Please confirm your passkey in the prompt...
-        </p>
-      )}
     </>
   );
 }

@@ -8,6 +8,13 @@
       "when": 1784980032883,
       "tag": "0000_friendly_vision",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785012736735,
+      "tag": "0001_glossy_wallow",
+      "breakpoints": true
     }
   ]
 }

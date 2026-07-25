@@ -12,10 +12,7 @@ const envSchema = z.object({
     SESSION_SECRET: z.string().min(32),
     JWT_SECRET: z.string().min(32),
 
-    WEBAUTHN_RP_ID: z.string().default("localhost"),
-    WEBAUTHN_RP_NAME: z.string().default("One"),
-    WEBAUTHN_ORIGIN: z.string().url().default("http://localhost:3000"),
-
+    GOOGLE_CLIENT_ID: z.string().optional(), // Make optional so server doesn't crash immediately without it in dev
     CORS_ORIGIN: z.string().default("http://localhost:3000"),
 
     // LiveKit Config

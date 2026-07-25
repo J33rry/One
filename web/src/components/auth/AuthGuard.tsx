@@ -6,10 +6,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
 const PUBLIC_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password'];
-const PASSKEY_ONBOARDING_ROUTE = '/onboarding/passkey';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isPasskeyEnrolled, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -17,26 +16,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     if (isLoading) return;
 
     const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
-    const isOnboardingRoute = pathname === PASSKEY_ONBOARDING_ROUTE;
 
-    if (!isAuthenticated) {
-      if (!isPublicRoute) {
-        router.push('/login');
-      }
-    } else {
-      // Authenticated users
-      if (!isPasskeyEnrolled) {
-        if (!isOnboardingRoute) {
-          router.push(PASSKEY_ONBOARDING_ROUTE);
-        }
-      } else {
-        // Fully authenticated and enrolled
-        if (isPublicRoute || isOnboardingRoute) {
-          router.push('/');
-        }
-      }
+    if (!isAuthenticated && !isPublicRoute) {
+      router.push('/login');
+    } else if (isAuthenticated && isPublicRoute) {
+      router.push('/');
     }
-  }, [isAuthenticated, isPasskeyEnrolled, isLoading, pathname, router]);
+  }, [isAuthenticated, isLoading, pathname, router]);
 
   if (isLoading) {
     return (
@@ -46,13 +32,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Prevent flash of content during redirect
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
-  const isOnboardingRoute = pathname === PASSKEY_ONBOARDING_ROUTE;
 
   if (!isAuthenticated && !isPublicRoute) return null;
-  if (isAuthenticated && !isPasskeyEnrolled && !isOnboardingRoute) return null;
-  if (isAuthenticated && isPasskeyEnrolled && (isPublicRoute || isOnboardingRoute)) return null;
+  if (isAuthenticated && isPublicRoute) return null;
 
   return <>{children}</>;
 }

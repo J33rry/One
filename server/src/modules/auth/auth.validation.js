@@ -16,12 +16,8 @@ export const loginPasswordSchema = z.object({
     password: z.string().min(1),
 });
 
-export const passkeyVerifySchema = z.object({
-    credential: z.any(),
-});
-
-export const passkeyRenameSchema = z.object({
-    deviceName: z.string().min(1).max(100),
+export const loginGoogleSchema = z.object({
+    idToken: z.string().min(1),
 });
 
 export const passwordChangeSchema = z.object({
@@ -33,12 +29,7 @@ export const forgotPasswordSchema = z.object({
     email: z.string().email(),
 });
 
-export const resetWebauthnOptionsSchema = z.object({
+export const resetPasswordSchema = z.object({
     resetToken: z.string().min(1),
-});
-
-export const resetWebauthnVerifySchema = z.object({
-    mfaToken: z.string().min(1),
-    credential: z.any(),
     newPassword: z.string().min(8).max(128),
 });

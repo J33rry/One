@@ -1,5 +1,5 @@
 import { db } from "../../db/index.js";
-import { users, passkeys } from "../../db/schema/index.js";
+import { users } from "../../db/schema/index.js";
 import { eq, and, sql } from "drizzle-orm";
 
 export async function createUser(data) {
@@ -34,56 +34,6 @@ export async function updateUser(id, data) {
     return user;
 }
 
-export async function createPasskey(data) {
-    const [passkey] = await db.insert(passkeys).values(data).returning();
-    return passkey;
-}
-
-export async function findPasskeysByUserId(userId) {
-    return db
-        .select()
-        .from(passkeys)
-        .where(eq(passkeys.userId, userId));
-}
-
-export async function findPasskeyByCredentialId(credentialIdBuffer) {
-    const [passkey] = await db
-        .select()
-        .from(passkeys)
-        .where(eq(passkeys.credentialId, credentialIdBuffer))
-        .limit(1);
-    return passkey;
-}
-
-export async function findPasskeyById(id) {
-    const [passkey] = await db
-        .select()
-        .from(passkeys)
-        .where(eq(passkeys.id, id))
-        .limit(1);
-    return passkey;
-}
-
-export async function updatePasskey(id, data) {
-    const [passkey] = await db
-        .update(passkeys)
-        .set(data)
-        .where(eq(passkeys.id, id))
-        .returning();
-    return passkey;
-}
-
-export async function deletePasskey(id) {
-    await db.delete(passkeys).where(eq(passkeys.id, id));
-}
-
-export async function countPasskeysByUserId(userId) {
-    const [result] = await db
-        .select({ count: sql`count(*)::int` })
-        .from(passkeys)
-        .where(eq(passkeys.userId, userId));
-    return result.count;
-}
 
 export async function findUserByResetNonce(nonce) {
     const [user] = await db

@@ -102,10 +102,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   </p>
                 )}
 
-                <div className="pt-1 flex items-center justify-between">
-                  <span className="text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                    Passkey Active
-                  </span>
+                <div className="pt-1 flex items-center justify-end">
                   <Link
                     href="/settings"
                     onClick={() => setShowProfileCard(false)}

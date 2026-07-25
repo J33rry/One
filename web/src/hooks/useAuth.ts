@@ -38,7 +38,6 @@ export function useAuth() {
     user: user || null,
     isLoading,
     isAuthenticated: !!user,
-    isPasskeyEnrolled: user?.passkeyEnrolled ?? false,
     error: error as ApiError | null,
     logout: logoutMutation.mutate,
     isLoggingOut: logoutMutation.isPending,

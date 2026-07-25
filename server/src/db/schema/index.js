@@ -1,5 +1,4 @@
 export * from "./users.js";
-export * from "./passkeys.js";
 export * from "./contacts.js";
 export * from "./chats.js";
 export * from "./blockedUsers.js";
