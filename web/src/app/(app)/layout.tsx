@@ -32,9 +32,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="flex h-full bg-zinc-950 overflow-hidden text-zinc-100 relative">
+    <div className="flex h-full h-screen h-[100dvh] w-full bg-zinc-950 overflow-hidden text-zinc-100 relative">
       {/* Desktop Navigation Rail */}
-      <nav className="hidden md:flex w-16 flex-col items-center py-4 bg-zinc-900/90 border-r border-zinc-800/80 z-30 shrink-0 select-none">
+      <nav className="hidden md:flex w-16 flex-col items-center py-4 bg-zinc-900/90 border-r border-zinc-800/80 z-30 shrink-0 select-none h-full">
         {/* App Logo Mark */}
         <Link
           href="/"
@@ -159,7 +159,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </nav>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex overflow-hidden relative">
+      <main className="flex-1 flex h-full min-w-0 overflow-hidden relative">
         {children}
       </main>
 

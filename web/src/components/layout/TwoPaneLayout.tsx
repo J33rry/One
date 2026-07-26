@@ -9,11 +9,11 @@ interface TwoPaneLayoutProps {
 
 export function TwoPaneLayout({ sidebar, main, showMainOnMobile = false }: TwoPaneLayoutProps) {
   return (
-    <div className="flex-1 flex overflow-hidden w-full">
+    <div className="flex-1 flex h-full overflow-hidden w-full">
       {/* Sidebar Pane */}
       <div 
         className={clsx(
-          "w-full md:w-80 lg:w-96 flex-shrink-0 border-r border-zinc-800 bg-zinc-950/50 flex flex-col",
+          "w-full md:w-80 lg:w-96 flex-shrink-0 border-r border-zinc-800 bg-zinc-950/50 flex flex-col h-full overflow-hidden",
           showMainOnMobile ? "hidden md:flex" : "flex"
         )}
       >
@@ -23,7 +23,7 @@ export function TwoPaneLayout({ sidebar, main, showMainOnMobile = false }: TwoPa
       {/* Main Pane */}
       <div 
         className={clsx(
-          "flex-1 min-w-0 bg-zinc-950 flex flex-col relative",
+          "flex-1 min-w-0 bg-zinc-950 flex flex-col relative h-full overflow-hidden",
           showMainOnMobile ? "flex" : "hidden md:flex"
         )}
       >

@@ -117,7 +117,7 @@ function MessageBubble({
     return (
         <div
             className={clsx(
-                "flex gap-2.5 max-w-[85%] group/row relative my-0.5",
+                "flex gap-2.5 max-w-[85%] sm:max-w-[75%] min-w-0 group/row relative my-0.5",
                 isMe ? "self-end" : "self-start",
             )}
         >
@@ -137,7 +137,7 @@ function MessageBubble({
 
             <div
                 className={clsx(
-                    "flex flex-col relative",
+                    "flex flex-col relative min-w-0 max-w-full",
                     isMe ? "items-end" : "items-start",
                 )}
             >
@@ -149,7 +149,7 @@ function MessageBubble({
 
                 <div
                     className={clsx(
-                        "px-4 py-2.5 rounded-2xl group relative text-sm shadow-sm transition-all duration-150",
+                        "px-4 py-2.5 rounded-2xl group relative text-sm shadow-sm transition-all duration-150 min-w-0 max-w-full break-words [overflow-wrap:anywhere]",
                         msg.isDeleted
                             ? "bg-zinc-900 border border-zinc-800 italic text-zinc-500"
                             : isMe
@@ -264,7 +264,7 @@ function MessageBubble({
 
                             {/* Text content */}
                             {msg.content && (
-                                <p className="whitespace-pre-wrap wrap-break-words leading-relaxed">
+                                <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] leading-relaxed">
                                     {msg.content}
                                 </p>
                             )}
@@ -461,6 +461,9 @@ export function MessageList({ chatId }: MessageListProps) {
     const queryClient = useQueryClient();
     const scrollRef = useRef<HTMLDivElement>(null);
     const observerRef = useRef<IntersectionObserver | null>(null);
+    const isInitialLoadRef = useRef(true);
+    const prevScrollHeightRef = useRef<number>(0);
+
     const { typingUsers } = useTyping(chatId);
     const { startCall } = useCallStore();
 
@@ -574,16 +577,9 @@ export function MessageList({ chatId }: MessageListProps) {
         queryClient.invalidateQueries({ queryKey: ["calls", chatId] });
     });
 
-    if (isMessagesLoading) {
-        return <MessageListSkeleton />;
-    }
-
     const messagesList =
         messagesData?.pages.flatMap((page) => page.messages || []) || [];
     const callsList = callsData?.calls || [];
-
-    const prevMsgMap = new Map<string, Message>();
-    messagesList.forEach((m) => prevMsgMap.set(m.id, m));
 
     const timelineItems: TimelineItem[] = [
         ...messagesList.map((m) => ({
@@ -600,13 +596,59 @@ export function MessageList({ chatId }: MessageListProps) {
 
     timelineItems.sort((a, b) => a.timestamp - b.timestamp);
 
+    // Initial scroll to bottom & scroll on new message
+    useEffect(() => {
+        if (scrollRef.current && timelineItems.length > 0) {
+            if (isInitialLoadRef.current) {
+                scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+                isInitialLoadRef.current = false;
+            } else {
+                const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+                const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
+                if (isNearBottom) {
+                    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+                }
+            }
+        }
+    }, [chatId, timelineItems.length]);
+
+    // Reset initial load flag when switching chats
+    useEffect(() => {
+        isInitialLoadRef.current = true;
+    }, [chatId]);
+
+    // Preserve scroll position when loading older pages
+    useEffect(() => {
+        if (isFetchingNextPage && scrollRef.current) {
+            prevScrollHeightRef.current = scrollRef.current.scrollHeight;
+        }
+    }, [isFetchingNextPage]);
+
+    useEffect(() => {
+        if (!isFetchingNextPage && prevScrollHeightRef.current && scrollRef.current) {
+            const newScrollHeight = scrollRef.current.scrollHeight;
+            const diff = newScrollHeight - prevScrollHeightRef.current;
+            if (diff > 0) {
+                scrollRef.current.scrollTop += diff;
+            }
+            prevScrollHeightRef.current = 0;
+        }
+    }, [isFetchingNextPage]);
+
+    if (isMessagesLoading) {
+        return <MessageListSkeleton />;
+    }
+
+    const prevMsgMap = new Map<string, Message>();
+    messagesList.forEach((m) => prevMsgMap.set(m.id, m));
+
     return (
         <div
-            className="flex-1 overflow-y-auto p-4 flex flex-col"
+            className="flex-1 overflow-y-auto overflow-x-hidden p-4 flex flex-col min-w-0 max-w-full"
             ref={scrollRef}
         >
             {hasNextPage && (
-                <div ref={loadMoreRef} className="flex justify-center py-4">
+                <div ref={loadMoreRef} className="flex justify-center py-4 shrink-0">
                     {isFetchingNextPage ? (
                         <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
                     ) : (
@@ -620,7 +662,7 @@ export function MessageList({ chatId }: MessageListProps) {
                     Beginning of conversation history
                 </div>
             ) : (
-                <div className="flex flex-col justify-end min-h-full space-y-3">
+                <div className="flex flex-col mt-auto space-y-3">
                     {timelineItems.map((item, index) => {
                         const itemDate = new Date(item.timestamp);
                         const prevItemDate =
