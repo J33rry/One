@@ -5,8 +5,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { contactsApi } from "@/lib/api/contacts";
 import { chatsApi } from "@/lib/api/chats";
 import { useRouter } from "next/navigation";
-import { X, Users, User, Loader2, Check } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { Users, User, Check, AlertCircle, Search } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { Input, Textarea } from "@/components/ui/Input";
+import { Avatar } from "@/components/ui/Avatar";
+import { usePresence } from "@/hooks/usePresence";
+import clsx from "clsx";
 
 interface NewChatModalProps {
   isOpen: boolean;
@@ -16,32 +21,45 @@ interface NewChatModalProps {
 export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user: currentUser } = useAuth();
-  
+  const { isOnline } = usePresence();
+
   const [type, setType] = useState<"dm" | "group">("dm");
   const [groupName, setGroupName] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [searchFilter, setSearchFilter] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
   const { data: contactsData, isLoading: isLoadingContacts } = useQuery({
-    queryKey: ['contacts'],
+    queryKey: ["contacts"],
     queryFn: () => contactsApi.getContacts(),
     enabled: isOpen,
   });
 
-  // Only accepted contacts can be added to a new chat, and deduplicate by target user id
-  const acceptedContacts = (contactsData?.contacts?.filter(c => c.status === 'accepted') || [])
-    .filter((contact, index, self) => {
-      if (!contact.contactUser) return false;
-      return index === self.findIndex((c) => c.contactUser?.id === contact.contactUser?.id);
-    });
+  const acceptedContacts = (
+    contactsData?.contacts?.filter((c) => c.status === "accepted") || []
+  ).filter((contact, index, self) => {
+    if (!contact.contactUser) return false;
+    return index === self.findIndex((c) => c.contactUser?.id === contact.contactUser?.id);
+  });
+
+  const filteredContacts = acceptedContacts.filter((c) => {
+    if (!searchFilter.trim()) return true;
+    const name = (c.contactUser?.displayName || "").toLowerCase();
+    const username = (c.contactUser?.username || "").toLowerCase();
+    const query = searchFilter.toLowerCase();
+    return name.includes(query) || username.includes(query);
+  });
 
   const createChatMutation = useMutation({
-    mutationFn: (payload: { type: "dm" | "group"; name?: string; description?: string; participantIds: string[] }) =>
-      chatsApi.createChat(payload),
+    mutationFn: (payload: {
+      type: "dm" | "group";
+      name?: string;
+      description?: string;
+      participantIds: string[];
+    }) => chatsApi.createChat(payload),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['chats'] });
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
       onClose();
       resetForm();
       router.push(`/chats/${data.chat.id}`);
@@ -56,17 +74,16 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
     setGroupName("");
     setGroupDescription("");
     setSelectedUserIds([]);
+    setSearchFilter("");
     setErrorMsg("");
   };
-
-  if (!isOpen) return null;
 
   const toggleUserSelection = (userId: string) => {
     if (type === "dm") {
       setSelectedUserIds([userId]);
     } else {
-      setSelectedUserIds(prev => 
-        prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+      setSelectedUserIds((prev) =>
+        prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
       );
     }
   };
@@ -88,41 +105,39 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
     createChatMutation.mutate({
       type,
       name: type === "group" ? groupName.trim() : undefined,
-      description: type === "group" && groupDescription.trim() ? groupDescription.trim() : undefined,
+      description:
+        type === "group" && groupDescription.trim() ? groupDescription.trim() : undefined,
       participantIds: selectedUserIds,
     });
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
-          <h3 className="text-lg font-bold text-white">New Chat</h3>
-          <button
-            onClick={() => {
-              resetForm();
-              onClose();
-            }}
-            className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
+    <Modal
+      isOpen={isOpen}
+      onClose={() => {
+        resetForm();
+        onClose();
+      }}
+      title="New Conversation"
+      maxWidth="md"
+    >
+      <div className="flex flex-col gap-4 p-6">
         {/* Type Toggle Tabs */}
-        <div className="flex border-b border-zinc-800 bg-zinc-950/50 p-1 gap-1 mx-6 mt-4 rounded-lg border">
+        <div className="flex border border-zinc-800 bg-zinc-950/60 p-1 rounded-xl">
           <button
             type="button"
             onClick={() => {
               setType("dm");
               setSelectedUserIds([]);
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-colors ${
-              type === "dm" ? "bg-zinc-800 text-white shadow" : "text-zinc-400 hover:text-white"
-            }`}
+            className={clsx(
+              "flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all",
+              type === "dm"
+                ? "bg-zinc-800 text-white shadow-md border border-zinc-700/60"
+                : "text-zinc-400 hover:text-white"
+            )}
           >
-            <User className="w-4 h-4" />
+            <User className="w-4 h-4 text-emerald-400" />
             Direct Message
           </button>
           <button
@@ -131,100 +146,110 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
               setType("group");
               setSelectedUserIds([]);
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-colors ${
-              type === "group" ? "bg-zinc-800 text-white shadow" : "text-zinc-400 hover:text-white"
-            }`}
+            className={clsx(
+              "flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all",
+              type === "group"
+                ? "bg-zinc-800 text-white shadow-md border border-zinc-700/60"
+                : "text-zinc-400 hover:text-white"
+            )}
           >
-            <Users className="w-4 h-4" />
+            <Users className="w-4 h-4 text-emerald-400" />
             Group Chat
           </button>
         </div>
 
-        {/* Modal Body / Form */}
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden p-6 gap-4">
-          {errorMsg && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-              {errorMsg}
-            </div>
-          )}
+        {errorMsg && (
+          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{errorMsg}</span>
+          </div>
+        )}
 
+        <form onSubmit={handleSubmit} className="space-y-4">
           {type === "group" && (
             <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">
-                  Group Name *
-                </label>
-                <input
-                  type="text"
-                  value={groupName}
-                  onChange={(e) => setGroupName(e.target.value)}
-                  placeholder="e.g. Project Team, Family"
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">
-                  Description (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={groupDescription}
-                  onChange={(e) => setGroupDescription(e.target.value)}
-                  placeholder="What's this group about?"
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
-                />
-              </div>
+              <Input
+                label="Group Name *"
+                type="text"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                placeholder="e.g. Project Team, Family"
+              />
+              <Textarea
+                label="Description (Optional)"
+                value={groupDescription}
+                onChange={(e) => setGroupDescription(e.target.value)}
+                placeholder="What's this group about?"
+                rows={2}
+              />
             </div>
           )}
 
-          <div className="flex-1 flex flex-col min-h-0">
-            <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
-              Select {type === "dm" ? "Contact" : "Participants"} ({selectedUserIds.length})
-            </label>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                Select {type === "dm" ? "Contact" : "Participants"} ({selectedUserIds.length})
+              </label>
+            </div>
+
+            <Input
+              type="text"
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              placeholder="Search contacts..."
+              leftIcon={<Search className="w-3.5 h-3.5 text-zinc-500" />}
+            />
 
             {isLoadingContacts ? (
-              <div className="flex-1 flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
-              </div>
-            ) : acceptedContacts.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center py-8 text-center text-sm text-zinc-500">
-                No accepted contacts found. Add contacts first to start a chat!
+              <div className="py-8 text-center text-xs text-zinc-500">Loading contacts...</div>
+            ) : filteredContacts.length === 0 ? (
+              <div className="py-8 text-center text-xs text-zinc-500">
+                {acceptedContacts.length === 0
+                  ? "No contacts found. Add contacts first to start a chat!"
+                  : "No matching contacts."}
               </div>
             ) : (
-              <div className="flex-1 overflow-y-auto divide-y divide-zinc-800/60 border border-zinc-800 rounded-lg bg-zinc-950/40">
-                {acceptedContacts.map((contact) => {
+              <div className="max-h-56 overflow-y-auto divide-y divide-zinc-800/60 border border-zinc-800/80 rounded-xl bg-zinc-950/40 p-1">
+                {filteredContacts.map((contact) => {
                   const targetUser = contact.contactUser;
                   if (!targetUser) return null;
                   const isSelected = selectedUserIds.includes(targetUser.id);
+                  const isUserOnline = isOnline(targetUser.id);
 
                   return (
                     <div
                       key={contact.id}
                       onClick={() => toggleUserSelection(targetUser.id)}
-                      className={`flex items-center justify-between p-3 cursor-pointer transition-colors ${
-                        isSelected ? "bg-emerald-500/10" : "hover:bg-zinc-800/50"
-                      }`}
+                      className={clsx(
+                        "flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors",
+                        isSelected ? "bg-emerald-500/10 border border-emerald-500/30" : "hover:bg-zinc-800/50"
+                      )}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
-                          {targetUser.avatarUrl ? (
-                            <img src={targetUser.avatarUrl} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <User className="w-5 h-5 text-zinc-400" />
-                          )}
-                        </div>
+                        <Avatar
+                          src={targetUser.avatarUrl}
+                          name={targetUser.displayName}
+                          size="md"
+                          showPresence
+                          isOnline={isUserOnline}
+                        />
                         <div>
-                          <p className="text-sm font-medium text-white">{targetUser.displayName}</p>
-                          <p className="text-xs text-zinc-500">@{targetUser.username}</p>
+                          <p className="text-xs font-semibold text-white">
+                            {targetUser.displayName}
+                          </p>
+                          <p className="text-[11px] text-zinc-500 font-mono">
+                            @{targetUser.username}
+                          </p>
                         </div>
                       </div>
 
                       <div
-                        className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${
+                        className={clsx(
+                          "w-5 h-5 rounded-md flex items-center justify-center border transition-colors",
                           isSelected
                             ? "bg-emerald-500 border-emerald-500 text-white"
                             : "border-zinc-700 bg-zinc-800"
-                        }`}
+                        )}
                       >
                         {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                       </div>
@@ -235,28 +260,28 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
             )}
           </div>
 
-          <div className="pt-2 flex justify-end gap-3 shrink-0">
-            <button
+          <div className="pt-2 flex justify-end gap-3">
+            <Button
               type="button"
+              variant="secondary"
               onClick={() => {
                 resetForm();
                 onClose();
               }}
-              className="px-4 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={createChatMutation.isPending || selectedUserIds.length === 0}
-              className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
+              variant="primary"
+              isLoading={createChatMutation.isPending}
+              disabled={selectedUserIds.length === 0}
             >
-              {createChatMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
               Create Chat
-            </button>
+            </Button>
           </div>
         </form>
       </div>
-    </div>
+    </Modal>
   );
 }

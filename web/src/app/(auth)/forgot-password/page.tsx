@@ -7,10 +7,12 @@ import { useMutation } from "@tanstack/react-query";
 import { authApi } from "@/lib/api/auth";
 import { useState } from "react";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Mail, AlertCircle, CheckCircle2 } from "lucide-react";
 
 const forgotSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email("Please enter a valid email address"),
 });
 
 type ForgotFormValues = z.infer<typeof forgotSchema>;
@@ -19,7 +21,11 @@ export default function ForgotPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ForgotFormValues>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ForgotFormValues>({
     resolver: zodResolver(forgotSchema),
   });
 
@@ -39,48 +45,64 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div>
-      <h3 className="text-xl font-bold mb-6 text-white">Reset your password</h3>
-      
+    <div className="space-y-6">
+      <div className="text-center space-y-1">
+        <h2 className="text-xl font-bold text-white tracking-tight">Reset your password</h2>
+        <p className="text-xs text-zinc-400">Enter your email and we'll send a password recovery link.</p>
+      </div>
+
       {success ? (
-        <div className="text-center">
-          <p className="text-emerald-500 mb-6">
-            If that email exists in our system, we've sent a password reset link to it.
+        <div className="text-center space-y-4 py-2">
+          <div className="w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <p className="text-xs text-zinc-300 leading-relaxed">
+            If that email exists in our system, we've sent a password reset link to it. Please check your inbox.
           </p>
-          <Link href="/login" className="text-emerald-500 hover:text-emerald-400 text-sm font-medium">
-            Return to login
-          </Link>
+          <div className="pt-2">
+            <Link href="/login">
+              <Button variant="secondary" className="w-full">
+                Return to login
+              </Button>
+            </Link>
+          </div>
         </div>
       ) : (
         <>
           {errorMsg && (
-            <div className="mb-4 p-3 rounded bg-red-500/10 text-red-500 text-sm border border-red-500/20">
-              {errorMsg}
+            <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+              <span>{errorMsg}</span>
             </div>
           )}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-300">Email address</label>
-              <input
-                {...register("email")}
-                type="email"
-                className="mt-1 block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm px-3 py-2"
-              />
-              {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>}
-            </div>
 
-            <button
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <Input
+              {...register("email")}
+              label="Email address"
+              type="email"
+              placeholder="you@example.com"
+              leftIcon={<Mail className="w-4 h-4" />}
+              error={errors.email?.message}
+            />
+
+            <Button
               type="submit"
-              disabled={mutation.isPending}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50"
+              variant="primary"
+              size="lg"
+              className="w-full mt-2"
+              isLoading={mutation.isPending}
             >
-              {mutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : "Send reset link"}
-            </button>
+              Send reset link
+            </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-zinc-400">
+          <div className="text-center text-xs text-zinc-400 pt-2">
             Remember your password?{" "}
-            <Link href="/login" className="text-emerald-500 hover:text-emerald-400">
+            <Link
+              href="/login"
+              className="font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+            >
               Sign in
             </Link>
           </div>

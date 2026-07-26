@@ -13,7 +13,8 @@ export async function listContacts(userId) {
             id: c.userId === userId ? c.contactId : c.userId,
             username: c.contactUsername,
             displayName: c.contactDisplayName,
-            avatarUrl: c.contactAvatarUrl
+            avatarUrl: c.contactAvatarUrl,
+            lastSeenAt: c.contactLastSeenAt,
         }
     }));
 }

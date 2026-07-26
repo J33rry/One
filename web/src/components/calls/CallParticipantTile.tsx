@@ -24,8 +24,8 @@ export function CallParticipantTile({
   return (
     <div
       className={clsx(
-        "relative rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 flex items-center justify-center",
-        isLocal ? "w-36 h-48" : "w-full h-full min-h-[200px]"
+        "relative rounded-2xl overflow-hidden bg-zinc-900/90 border border-zinc-800/80 flex items-center justify-center shadow-xl transition-all",
+        isLocal ? "w-40 h-52 shadow-2xl border-emerald-500/30" : "w-full h-full min-h-[220px]"
       )}
     >
       {isVideo && hasTrack ? (
@@ -35,25 +35,25 @@ export function CallParticipantTile({
         />
       ) : (
         <div className="flex flex-col items-center gap-3">
-          <div className="w-20 h-20 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center">
-            <User className="w-10 h-10 text-zinc-500" />
+          <div className="w-20 h-20 rounded-full bg-zinc-800 border-2 border-zinc-700/60 flex items-center justify-center shadow-inner">
+            <User className="w-10 h-10 text-emerald-400" />
           </div>
           {displayName && (
-            <span className="text-sm text-zinc-400 font-medium">{displayName}</span>
+            <span className="text-xs text-zinc-300 font-semibold">{displayName}</span>
           )}
         </div>
       )}
 
-      {/* Name badge + mute indicator */}
-      <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+      {/* Overlay Badge */}
+      <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
         {displayName && (
-          <span className="text-xs text-white/80 bg-black/50 backdrop-blur-sm px-2 py-1 rounded-md truncate max-w-[70%]">
+          <span className="text-[11px] text-white/90 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg truncate max-w-[70%] font-medium border border-white/10">
             {isLocal ? "You" : displayName}
           </span>
         )}
         {isMuted && (
-          <span className="bg-red-500/80 p-1 rounded-full ml-auto">
-            <MicOff className="w-3 h-3 text-white" />
+          <span className="bg-red-500/80 p-1.5 rounded-full ml-auto shadow-md">
+            <MicOff className="w-3.5 h-3.5 text-white" />
           </span>
         )}
       </div>

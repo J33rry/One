@@ -2,6 +2,7 @@ import { AppError } from "../../lib/AppError.js";
 import * as repo from "./chats.repository.js";
 import { isBlocked } from "../blocked/blocked.repository.js";
 import { broadcastToChat, broadcastToUser } from "../../ws/connectionRegistry.js";
+import { findLatestMessageForChat } from "../messages/messages.repository.js";
 
 function mapParticipants(rawParticipants) {
     return rawParticipants.map(p => ({
@@ -14,7 +15,8 @@ function mapParticipants(rawParticipants) {
             id: p.userId,
             username: p.username,
             displayName: p.displayName,
-            avatarUrl: p.avatarUrl
+            avatarUrl: p.avatarUrl,
+            lastSeenAt: p.lastSeenAt,
         }
     }));
 }
@@ -23,6 +25,7 @@ export async function listChats(userId) {
     const userChats = await repo.findUserChats(userId);
     const chats = await Promise.all(userChats.map(async ({ chat, role }) => {
         const rawParticipants = await repo.findChatParticipants(chat.id);
+        const latestMessage = await findLatestMessageForChat(chat.id);
         
         let blocked = false;
         if (chat.type === "dm") {
@@ -32,7 +35,13 @@ export async function listChats(userId) {
             }
         }
         
-        return { ...chat, myRole: role, isBlocked: blocked, participants: mapParticipants(rawParticipants) };
+        return {
+            ...chat,
+            myRole: role,
+            isBlocked: blocked,
+            participants: mapParticipants(rawParticipants),
+            latestMessage,
+        };
     }));
     return chats;
 }

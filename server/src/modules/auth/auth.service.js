@@ -64,11 +64,19 @@ export async function loginWithGoogle(idToken) {
         });
         payload = ticket.getPayload();
     } catch (error) {
-        throw new AppError(401, "Invalid Google ID token", "GOOGLE_AUTH_FAILED");
+        throw new AppError(
+            401,
+            "Invalid Google ID token",
+            "GOOGLE_AUTH_FAILED",
+        );
     }
 
     if (!payload || !payload.email) {
-        throw new AppError(401, "Could not get email from Google", "GOOGLE_AUTH_FAILED");
+        throw new AppError(
+            401,
+            "Could not get email from Google",
+            "GOOGLE_AUTH_FAILED",
+        );
     }
 
     const email = payload.email;
@@ -91,7 +99,10 @@ export async function loginWithGoogle(idToken) {
                 break;
             } catch (e) {
                 // If unique constraint failed on username, try another
-                if (e.code === '23505' && e.constraint === 'users_username_unique') {
+                if (
+                    e.code === "23505" &&
+                    e.constraint === "users_username_unique"
+                ) {
                     username = `${baseUsername}${counter++}`;
                 } else {
                     throw e;
@@ -111,7 +122,11 @@ export async function changePassword(userId, currentPassword, newPassword) {
     if (user.passwordHash) {
         const valid = await argon2.verify(user.passwordHash, currentPassword);
         if (!valid) {
-            throw new AppError(400, "Current password is incorrect", "INVALID_PASSWORD");
+            throw new AppError(
+                400,
+                "Current password is incorrect",
+                "INVALID_PASSWORD",
+            );
         }
     }
 
@@ -135,7 +150,7 @@ export async function forgotPassword(email) {
         { expiresIn: "15m" },
     );
 
-    const resetLink = `${origin}/reset-password?token=${resetToken}`;
+    const resetLink = `${env.CORS_ORIGIN}/reset-password?token=${resetToken}`;
     await sendPasswordResetEmail(user.email, resetLink);
 }
 
@@ -144,7 +159,11 @@ export async function resetPassword(resetToken, newPassword) {
     try {
         payload = jwt.verify(resetToken, env.JWT_SECRET);
     } catch {
-        throw new AppError(400, "Invalid or expired reset token", "RESET_TOKEN_INVALID");
+        throw new AppError(
+            400,
+            "Invalid or expired reset token",
+            "RESET_TOKEN_INVALID",
+        );
     }
 
     if (payload.purpose !== "password_reset") {
@@ -153,7 +172,11 @@ export async function resetPassword(resetToken, newPassword) {
 
     const user = await repo.findUserById(payload.userId);
     if (!user || user.passwordResetNonce !== payload.nonce) {
-        throw new AppError(400, "Reset token already used or invalid", "RESET_TOKEN_INVALID");
+        throw new AppError(
+            400,
+            "Reset token already used or invalid",
+            "RESET_TOKEN_INVALID",
+        );
     }
 
     const newHash = await argon2.hash(newPassword);

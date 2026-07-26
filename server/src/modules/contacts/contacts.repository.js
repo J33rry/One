@@ -24,6 +24,7 @@ export async function findUserContacts(userId) {
             contactUsername: users.username,
             contactDisplayName: users.displayName,
             contactAvatarUrl: users.avatarUrl,
+            contactLastSeenAt: users.lastSeenAt,
         })
         .from(contacts)
         .innerJoin(

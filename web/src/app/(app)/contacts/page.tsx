@@ -4,26 +4,45 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { contactsApi } from "@/lib/api/contacts";
 import { usersApi, User } from "@/lib/api/users";
-import { Loader2, Search, User as UserIcon, UserPlus, UserMinus, UserCheck, ShieldAlert } from "lucide-react";
-
+import {
+  Search,
+  UserPlus,
+  UserMinus,
+  UserCheck,
+  ShieldAlert,
+  Clock,
+  Shield,
+  Users,
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Badge } from "@/components/ui/Badge";
+import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { usePresence } from "@/hooks/usePresence";
+import { useToast } from "@/components/ui/Toast";
+import { formatLastSeen } from "@/lib/utils/presence";
 
 export default function ContactsPage() {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
+  const { isOnline, getLastSeen } = usePresence();
+  const { toast } = useToast();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [feedbackMsg, setFeedbackMsg] = useState("");
 
   const { data: contactsData, isLoading } = useQuery({
-    queryKey: ['contacts'],
+    queryKey: ["contacts"],
     queryFn: () => contactsApi.getContacts(),
   });
   const contacts = contactsData?.contacts;
 
   const { data: blockedData } = useQuery({
-    queryKey: ['blocked'],
+    queryKey: ["blocked"],
     queryFn: () => contactsApi.getBlockedUsers(),
   });
   const blockedUsers = blockedData?.blocked;
@@ -32,151 +51,170 @@ export default function ContactsPage() {
     const timer = setTimeout(() => {
       if (searchQuery.trim()) {
         setIsSearching(true);
-        setFeedbackMsg("");
-        usersApi.search(searchQuery)
-          .then(results => setSearchResults(results.users || []))
+        usersApi
+          .search(searchQuery)
+          .then((results) => setSearchResults(results.users || []))
           .catch(console.error)
           .finally(() => setIsSearching(false));
       } else {
         setSearchResults([]);
       }
-    }, 400); // 400ms debounce
+    }, 400);
     return () => clearTimeout(timer);
   }, [searchQuery]);
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // The useEffect will handle the search automatically
-  };
 
   const sendRequestMutation = useMutation({
     mutationFn: (userId: string) => contactsApi.sendRequest(userId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contacts'] });
-      setFeedbackMsg("Contact request sent!");
-      setTimeout(() => setFeedbackMsg(""), 4000);
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      toast("Contact request sent!", "success");
     },
     onError: (error: any) => {
-      setFeedbackMsg(error.message || "Failed to send contact request");
-      setTimeout(() => setFeedbackMsg(""), 4000);
-    }
+      toast(error.message || "Failed to send contact request", "error");
+    },
   });
 
   const respondRequestMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string, status: 'accepted' | 'rejected' }) => contactsApi.respondToRequest(id, status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contacts'] });
-    }
+    mutationFn: ({ id, status }: { id: string; status: "accepted" | "rejected" }) =>
+      contactsApi.respondToRequest(id, status),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      toast(`Contact request ${variables.status}`, "info");
+    },
   });
 
   const blockUserMutation = useMutation({
     mutationFn: (userId: string) => contactsApi.blockUser(userId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contacts'] });
-      queryClient.invalidateQueries({ queryKey: ['blocked'] });
-    }
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["blocked"] });
+      toast("User blocked", "info");
+    },
   });
 
   const unblockUserMutation = useMutation({
     mutationFn: (userId: string) => contactsApi.unblockUser(userId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contacts'] });
-      queryClient.invalidateQueries({ queryKey: ['blocked'] });
-    }
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["blocked"] });
+      toast("User unblocked", "success");
+    },
   });
 
   const deleteContactMutation = useMutation({
     mutationFn: (id: string) => contactsApi.deleteContact(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contacts'] });
-    }
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      toast("Contact removed", "info");
+    },
   });
 
-  const incomingRequests = contacts?.filter(c => c.status === 'pending' && c.contactId === currentUser?.id) || [];
-  const outgoingRequests = contacts?.filter(c => c.status === 'pending' && c.userId === currentUser?.id) || [];
-  const acceptedContacts = (contacts?.filter(c => c.status === 'accepted') || [])
-    .filter((contact, index, self) => {
+  const incomingRequests =
+    contacts?.filter((c) => c.status === "pending" && c.contactId === currentUser?.id) || [];
+  const outgoingRequests =
+    contacts?.filter((c) => c.status === "pending" && c.userId === currentUser?.id) || [];
+  const acceptedContacts = (contacts?.filter((c) => c.status === "accepted") || []).filter(
+    (contact, index, self) => {
       if (!contact.contactUser) return false;
       return index === self.findIndex((c) => c.contactUser?.id === contact.contactUser?.id);
-    });
+    }
+  );
 
   return (
-    <div className="flex-1 flex overflow-hidden">
-      {/* Search Sidebar */}
-      <div className="w-full md:w-80 lg:w-96 flex-shrink-0 border-r border-zinc-800 bg-zinc-950/50 flex flex-col">
-        <div className="h-16 flex items-center px-4 border-b border-zinc-800 shrink-0">
-          <h2 className="text-xl font-bold text-white">Find People</h2>
-        </div>
-        
-        <div className="p-4 border-b border-zinc-800 shrink-0">
-          <form onSubmit={handleSearch} className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search username..."
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-md py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-            />
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
-            <button type="submit" className="hidden">Search</button>
-          </form>
+    <div className="flex-1 flex overflow-hidden bg-zinc-950 select-none">
+      {/* User Search Panel */}
+      <div className="w-full md:w-80 lg:w-96 shrink-0 border-r border-zinc-800/80 bg-zinc-950/80 flex flex-col">
+        <div className="h-16 flex items-center px-4 border-b border-zinc-800/80 shrink-0">
+          <h2 className="text-xl font-bold text-white tracking-tight">Find People</h2>
         </div>
 
-        {feedbackMsg && (
-          <div className="mx-4 my-2 p-2.5 rounded bg-emerald-500/10 text-emerald-400 text-xs border border-emerald-500/20">
-            {feedbackMsg}
-          </div>
-        )}
+        <div className="p-4 border-b border-zinc-800/60 shrink-0">
+          <Input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by username..."
+            leftIcon={<Search className="w-4 h-4" />}
+          />
+        </div>
 
         <div className="flex-1 overflow-y-auto">
           {isSearching ? (
-            <div className="flex justify-center p-8">
-              <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
+            <div className="p-4 space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+                  <div className="space-y-1.5 flex-1">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
-            <ul className="divide-y divide-zinc-800/50">
-              {searchResults.map(user => {
+            <ul className="divide-y divide-zinc-800/40">
+              {searchResults.map((user) => {
                 const isSelf = currentUser?.id === user.id;
-                const existingContact = contacts?.find(c => c.contactId === user.id || c.userId === user.id);
-                const isBlocked = blockedUsers?.some(b => b.blockedUserId === user.id);
+                const existingContact = contacts?.find(
+                  (c) => c.contactId === user.id || c.userId === user.id
+                );
+                const isBlocked = blockedUsers?.some((b) => b.blockedUserId === user.id);
+                const isUserOnline = isOnline(user.id);
 
                 return (
-                  <li key={user.id} className="p-4 flex items-center justify-between hover:bg-zinc-900/50">
+                  <li
+                    key={user.id}
+                    className="p-4 flex items-center justify-between hover:bg-zinc-900/50 transition-colors"
+                  >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
-                        {user.avatarUrl ? <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" /> : <UserIcon className="w-5 h-5 text-zinc-400" />}
-                      </div>
+                      <Avatar
+                        src={user.avatarUrl}
+                        name={user.displayName}
+                        size="md"
+                        showPresence
+                        isOnline={isUserOnline}
+                      />
                       <div>
-                        <p className="text-sm font-medium text-white">{user.displayName}</p>
-                        <p className="text-xs text-zinc-500">@{user.username}</p>
+                        <p className="text-sm font-semibold text-white">{user.displayName}</p>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-zinc-500 font-mono">@{user.username}</span>
+                          <span className="text-zinc-700">•</span>
+                          {isUserOnline ? (
+                            <span className="text-emerald-400 font-medium text-[11px]">Online</span>
+                          ) : (
+                            <span className="text-zinc-400 text-[11px]">
+                              {formatLastSeen(getLastSeen(user.id) || (user as any).lastSeenAt)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
                     {isSelf ? (
-                      <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded">You</span>
+                      <Badge variant="zinc">You</Badge>
                     ) : isBlocked ? (
-                      <span className="text-xs text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">Blocked</span>
-                    ) : existingContact?.status === 'accepted' ? (
-                      <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
+                      <Badge variant="red">Blocked</Badge>
+                    ) : existingContact?.status === "accepted" ? (
+                      <Badge variant="emerald" className="flex items-center gap-1">
                         <UserCheck className="w-3 h-3" /> Connected
-                      </span>
-                    ) : existingContact?.status === 'pending' ? (
-                      <span className="text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">Pending</span>
+                      </Badge>
+                    ) : existingContact?.status === "pending" ? (
+                      <Badge variant="amber">Pending</Badge>
                     ) : (
-                      <button 
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        leftIcon={<UserPlus className="w-4 h-4 text-emerald-400" />}
+                        isLoading={sendRequestMutation.isPending}
                         onClick={() => sendRequestMutation.mutate(user.id)}
-                        disabled={sendRequestMutation.isPending}
-                        className="p-2 text-emerald-500 hover:bg-emerald-500/10 rounded-full transition-colors"
                         title="Add Contact"
-                      >
-                        <UserPlus className="w-4 h-4" />
-                      </button>
+                      />
                     )}
                   </li>
                 );
               })}
               {searchResults.length === 0 && searchQuery && !isSearching && (
-                <div className="p-8 text-center text-zinc-500 text-sm">
+                <div className="p-8 text-center text-xs text-zinc-500">
                   No users found matching "{searchQuery}"
                 </div>
               )}
@@ -185,154 +223,229 @@ export default function ContactsPage() {
         </div>
       </div>
 
-      {/* Main Content Area: My Contacts & Blocked */}
-      <div className="flex-1 flex flex-col bg-zinc-950 overflow-y-auto p-4 sm:p-8">
-        <h1 className="text-2xl font-bold text-white mb-8">My Contacts</h1>
-
-        {isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+      {/* Main Contacts Area */}
+      <div className="flex-1 flex flex-col bg-zinc-950 overflow-y-auto p-6 sm:p-10">
+        <div className="max-w-4xl space-y-8">
+          <div>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Contacts Directory</h1>
+            <p className="text-xs text-zinc-400 mt-1">
+              Manage your connections, pending requests, and blocked users.
+            </p>
           </div>
-        ) : (
-          <div className="space-y-8 max-w-3xl">
-            {/* Incoming Requests */}
-            {incomingRequests.length > 0 && (
-              <section>
-                <h3 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">Contact Requests</h3>
-                <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden">
-                  <ul className="divide-y divide-zinc-800">
-                    {incomingRequests.map(contact => (
-                      <li key={contact.id} className="p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden">
-                            {contact.contactUser?.avatarUrl ? <img src={contact.contactUser.avatarUrl} alt="" className="w-full h-full object-cover" /> : <UserIcon className="w-5 h-5 text-zinc-400" />}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-white">{contact.contactUser?.displayName}</p>
-                            <p className="text-xs text-zinc-500">@{contact.contactUser?.username}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => respondRequestMutation.mutate({ id: contact.id, status: 'accepted' })}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-medium"
-                          >
-                            Accept
-                          </button>
-                          <button 
-                            onClick={() => respondRequestMutation.mutate({ id: contact.id, status: 'rejected' })}
-                            className="bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-1.5 rounded text-xs font-medium"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </section>
-            )}
 
-            {/* Outgoing Requests */}
-            {outgoingRequests.length > 0 && (
-              <section>
-                <h3 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">Sent Requests</h3>
-                <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden">
-                  <ul className="divide-y divide-zinc-800">
-                    {outgoingRequests.map(contact => (
-                      <li key={contact.id} className="p-4 flex items-center justify-between opacity-70">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden">
-                            {contact.contactUser?.avatarUrl ? <img src={contact.contactUser.avatarUrl} alt="" className="w-full h-full object-cover" /> : <UserIcon className="w-5 h-5 text-zinc-400" />}
+          {isLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-40 w-full rounded-2xl" />
+              <Skeleton className="h-60 w-full rounded-2xl" />
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {/* Incoming Requests Section */}
+              {incomingRequests.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <h3 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                      <Clock className="w-4 h-4" /> Pending Contact Requests ({incomingRequests.length})
+                    </h3>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <ul className="divide-y divide-zinc-800/60">
+                      {incomingRequests.map((contact) => (
+                        <li key={contact.id} className="p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3.5">
+                            <Avatar
+                              src={contact.contactUser?.avatarUrl}
+                              name={contact.contactUser?.displayName}
+                              size="md"
+                              showPresence
+                              isOnline={isOnline(contact.contactUser?.id)}
+                            />
+                            <div>
+                              <p className="text-sm font-semibold text-white">
+                                {contact.contactUser?.displayName}
+                              </p>
+                              <p className="text-xs text-zinc-500 font-mono">
+                                @{contact.contactUser?.username}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-white">{contact.contactUser?.displayName}</p>
-                            <p className="text-xs text-zinc-500">@{contact.contactUser?.username}</p>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              onClick={() =>
+                                respondRequestMutation.mutate({
+                                  id: contact.id,
+                                  status: "accepted",
+                                })
+                              }
+                            >
+                              Accept
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() =>
+                                respondRequestMutation.mutate({
+                                  id: contact.id,
+                                  status: "rejected",
+                                })
+                              }
+                            >
+                              Reject
+                            </Button>
                           </div>
-                        </div>
-                        <span className="text-xs text-zinc-500 italic">Pending...</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </section>
-            )}
-
-            {/* Accepted Contacts */}
-            <section>
-              <h3 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">Accepted Contacts</h3>
-              {acceptedContacts.length === 0 ? (
-                <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-8 text-center text-zinc-400">
-                  You have no contacts yet. Search for users in the sidebar to add them.
-                </div>
-              ) : (
-                <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden">
-                  <ul className="divide-y divide-zinc-800">
-                    {acceptedContacts.map(contact => (
-                      <li key={contact.id} className="p-4 flex items-center justify-between group">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden">
-                            {contact.contactUser?.avatarUrl ? <img src={contact.contactUser.avatarUrl} alt="" className="w-full h-full object-cover" /> : <UserIcon className="w-5 h-5 text-zinc-400" />}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-white">{contact.contactUser?.displayName}</p>
-                            <p className="text-xs text-zinc-500">@{contact.contactUser?.username}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => deleteContactMutation.mutate(contact.id)}
-                            className="p-2 text-zinc-400 hover:text-red-400 rounded"
-                            title="Remove Contact"
-                          >
-                            <UserMinus className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={() => blockUserMutation.mutate(contact.contactId)}
-                            className="p-2 text-zinc-400 hover:text-red-400 rounded"
-                            title="Block User"
-                          >
-                            <ShieldAlert className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
               )}
-            </section>
 
-            {/* Blocked Users */}
-            {blockedUsers && blockedUsers.length > 0 && (
-              <section>
-                <h3 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">Blocked Users</h3>
-                <div className="bg-zinc-900 rounded-lg border border-red-900/30 overflow-hidden">
-                  <ul className="divide-y divide-zinc-800">
-                    {blockedUsers.map(blocked => (
-                      <li key={blocked.id} className="p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden opacity-50">
-                            {blocked.blockedUser?.avatarUrl ? <img src={blocked.blockedUser.avatarUrl} alt="" className="w-full h-full object-cover" /> : <UserIcon className="w-5 h-5 text-zinc-400" />}
+              {/* Outgoing Sent Requests */}
+              {outgoingRequests.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <h3 className="text-xs font-mono font-semibold text-zinc-400 uppercase tracking-wider">
+                      Sent Requests ({outgoingRequests.length})
+                    </h3>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <ul className="divide-y divide-zinc-800/60">
+                      {outgoingRequests.map((contact) => (
+                        <li key={contact.id} className="p-4 flex items-center justify-between opacity-80">
+                          <div className="flex items-center gap-3.5">
+                            <Avatar
+                              src={contact.contactUser?.avatarUrl}
+                              name={contact.contactUser?.displayName}
+                              size="md"
+                            />
+                            <div>
+                              <p className="text-sm font-semibold text-white">
+                                {contact.contactUser?.displayName}
+                              </p>
+                              <p className="text-xs text-zinc-500 font-mono">
+                                @{contact.contactUser?.username}
+                              </p>
+                            </div>
                           </div>
-                          <div className="opacity-50">
-                            <p className="text-sm font-medium text-white line-through">{blocked.blockedUser?.displayName}</p>
-                            <p className="text-xs text-zinc-500">@{blocked.blockedUser?.username}</p>
+                          <Badge variant="amber">Awaiting response...</Badge>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Accepted Connected Contacts */}
+              <Card>
+                <CardHeader>
+                  <h3 className="text-xs font-mono font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                    <Users className="w-4 h-4 text-emerald-400" /> Connected Contacts ({acceptedContacts.length})
+                  </h3>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {acceptedContacts.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-zinc-500">
+                      You have no contacts yet. Search for users in the sidebar to add them.
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-zinc-800/60">
+                      {acceptedContacts.map((contact) => {
+                        const target = contact.contactUser;
+                        if (!target) return null;
+                        const targetOnline = isOnline(target.id);
+
+                        return (
+                          <li
+                            key={contact.id}
+                            className="p-4 flex items-center justify-between group hover:bg-zinc-900/40 transition-colors"
+                          >
+                            <div className="flex items-center gap-3.5">
+                              <Avatar
+                                src={target.avatarUrl}
+                                name={target.displayName}
+                                size="md"
+                                showPresence
+                                isOnline={targetOnline}
+                              />
+                              <div>
+                                <p className="text-sm font-semibold text-white">
+                                  {target.displayName}
+                                </p>
+                                <p className="text-xs text-zinc-500 font-mono">
+                                  @{target.username}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                leftIcon={<UserMinus className="w-4 h-4 text-red-400" />}
+                                onClick={() => deleteContactMutation.mutate(contact.id)}
+                                title="Remove Contact"
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                leftIcon={<ShieldAlert className="w-4 h-4 text-red-400" />}
+                                onClick={() => blockUserMutation.mutate(contact.contactId)}
+                                title="Block User"
+                              />
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Blocked Users Section */}
+              {blockedUsers && blockedUsers.length > 0 && (
+                <Card className="border-red-900/30">
+                  <CardHeader>
+                    <h3 className="text-xs font-mono font-bold text-red-400 uppercase tracking-wider flex items-center gap-2">
+                      <Shield className="w-4 h-4" /> Blocked Users ({blockedUsers.length})
+                    </h3>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <ul className="divide-y divide-zinc-800/60">
+                      {blockedUsers.map((blocked) => (
+                        <li key={blocked.id} className="p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3.5 opacity-60">
+                            <Avatar
+                              src={blocked.blockedUser?.avatarUrl}
+                              name={blocked.blockedUser?.displayName}
+                              size="md"
+                            />
+                            <div>
+                              <p className="text-sm font-semibold text-white line-through">
+                                {blocked.blockedUser?.displayName}
+                              </p>
+                              <p className="text-xs text-zinc-500 font-mono">
+                                @{blocked.blockedUser?.username}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                        <button 
-                          onClick={() => unblockUserMutation.mutate(blocked.blockedUserId)}
-                          className="text-xs font-medium text-zinc-400 hover:text-white px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded"
-                        >
-                          Unblock
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </section>
-            )}
-          </div>
-        )}
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => unblockUserMutation.mutate(blocked.blockedUserId)}
+                          >
+                            Unblock
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

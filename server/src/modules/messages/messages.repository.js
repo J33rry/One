@@ -203,3 +203,24 @@ export async function findStatusForMessage(messageId) {
         .from(messageStatus)
         .where(eq(messageStatus.messageId, messageId));
 }
+
+export async function findLatestMessageForChat(chatId) {
+    const [msg] = await db
+        .select({
+            id: messages.id,
+            chatId: messages.chatId,
+            senderId: messages.senderId,
+            content: messages.content,
+            type: messages.type,
+            isDeleted: messages.isDeleted,
+            createdAt: messages.createdAt,
+            senderUsername: users.username,
+            senderDisplayName: users.displayName,
+        })
+        .from(messages)
+        .leftJoin(users, eq(users.id, messages.senderId))
+        .where(eq(messages.chatId, chatId))
+        .orderBy(desc(messages.createdAt))
+        .limit(1);
+    return msg || null;
+}

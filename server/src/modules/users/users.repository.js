@@ -8,6 +8,7 @@ const publicColumns = {
     displayName: users.displayName,
     avatarUrl: users.avatarUrl,
     bio: users.bio,
+    lastSeenAt: users.lastSeenAt,
     createdAt: users.createdAt,
 };
 
@@ -39,6 +40,15 @@ export async function updateProfile(id, data) {
         .where(eq(users.id, id))
         .returning(publicColumns);
     return user;
+}
+
+export async function updateLastSeen(id) {
+    const now = new Date();
+    await db
+        .update(users)
+        .set({ lastSeenAt: now, updatedAt: now })
+        .where(eq(users.id, id));
+    return now;
 }
 
 export async function searchByUsername(query, limit = 20) {

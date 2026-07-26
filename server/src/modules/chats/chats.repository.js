@@ -95,6 +95,7 @@ export async function findChatParticipants(chatId) {
             username: users.username,
             displayName: users.displayName,
             avatarUrl: users.avatarUrl,
+            lastSeenAt: users.lastSeenAt,
         })
         .from(chatParticipants)
         .innerJoin(users, eq(users.id, chatParticipants.userId))
