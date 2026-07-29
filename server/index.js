@@ -32,6 +32,8 @@ redisClient.on("error", (err) => console.error("[REDIS]", err));
 await redisClient.connect();
 
 // ── Session middleware (shared with WS upgrade) ──
+app.set("trust proxy", 1); // add before session middleware
+
 const sessionMiddleware = session({
     store: new RedisStore({ client: redisClient }),
     secret: env.SESSION_SECRET,
@@ -40,8 +42,8 @@ const sessionMiddleware = session({
     cookie: {
         secure: env.NODE_ENV === "production",
         httpOnly: true,
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        sameSite: env.NODE_ENV === "production" ? "none" : "lax", // was "lax"
+        maxAge: 7 * 24 * 60 * 60 * 1000,
     },
 });
 
