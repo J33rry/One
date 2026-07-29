@@ -12,7 +12,7 @@ class SocketClient {
     constructor() {
         // Determine WS URL based on API URL
         const apiUrl =
-            process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
+            process.env.NEXT_PUBLIC_WEBSOCKET_URL || "http://localhost:3002";
         this.url = apiUrl.replace(/^http/, "ws") + "/ws";
     }
 

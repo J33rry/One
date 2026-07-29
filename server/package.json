@@ -8,6 +8,7 @@
         "dev": "nodemon index.js",
         "db:generate": "drizzle-kit generate",
         "db:push": "drizzle-kit push",
+        "build": "echo 'No build step required for this project'",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [],
