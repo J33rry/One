@@ -10,6 +10,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/Card";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { usePresence } from "@/hooks/usePresence";
 import { useToast } from "@/components/ui/Toast";
 
@@ -72,21 +73,24 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-zinc-950 p-6 sm:p-10 select-none">
+    <div className="flex-1 overflow-y-auto bg-bg p-6 sm:p-10 select-none">
       <div className="max-w-4xl mx-auto space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Settings</h1>
-          <p className="text-xs text-zinc-400 mt-1">
+          <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-faint mb-2">
+            One — Account
+          </p>
+          <h1 className="font-display text-3xl font-semibold text-fg tracking-tight">Settings</h1>
+          <p className="text-xs text-muted mt-1.5">
             Manage your public profile, avatar, and account preferences.
           </p>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-zinc-800/80 space-x-6">
-          <button className="pb-3 text-sm font-semibold transition-colors relative flex items-center gap-2 text-emerald-400">
+        <div className="flex border-b border-border space-x-6">
+          <button className="pb-3 text-sm font-semibold transition-colors relative flex items-center gap-2 text-accent">
             <UserIcon className="w-4 h-4" />
             Profile Details
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-full" />
+            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full" />
           </button>
         </div>
 
@@ -107,7 +111,7 @@ export default function SettingsPage() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  className="absolute -bottom-1 -right-1 p-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/80 rounded-full text-zinc-200 shadow-xl transition-transform hover:scale-110 disabled:opacity-50"
+                  className="absolute -bottom-1 -right-1 p-2 bg-surface-3 hover:bg-surface-2 border border-border rounded-full text-fg shadow-lg transition-transform hover:scale-110 disabled:opacity-50"
                   title="Update Avatar"
                 >
                   <Camera className="w-4 h-4" />
@@ -122,12 +126,12 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <h3 className="text-lg font-bold text-fg flex items-center gap-2">
                   {user?.displayName || user?.username}
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <ShieldCheck className="w-4 h-4 text-accent" />
                 </h3>
-                <p className="text-xs text-zinc-400 font-mono">@{user?.username}</p>
-                <p className="text-[11px] text-zinc-500 font-mono mt-0.5">{user?.email}</p>
+                <p className="text-xs text-muted font-mono">@{user?.username}</p>
+                <p className="text-[11px] text-faint font-mono mt-0.5">{user?.email}</p>
               </div>
             </div>
           </CardHeader>
@@ -164,6 +168,26 @@ export default function SettingsPage() {
               </Button>
             </CardFooter>
           </form>
+        </Card>
+
+        {/* Appearance */}
+        <Card>
+          <CardHeader>
+            <div>
+              <h3 className="font-display text-lg font-semibold text-fg">Appearance</h3>
+              <p className="text-xs text-muted mt-0.5">
+                Choose a theme, or follow your system setting.
+              </p>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <label className="font-mono text-[11px] uppercase tracking-[0.15em] text-muted">
+                Theme
+              </label>
+              <ThemeToggle />
+            </div>
+          </CardContent>
         </Card>
       </div>
     </div>

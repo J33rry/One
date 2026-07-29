@@ -121,7 +121,7 @@ export function ChatMain({ chatId }: ChatMainProps) {
           <button
             onClick={() => startCall(chatId, "audio")}
             disabled={callState !== "idle" || chat.isBlocked}
-            className="p-2.5 rounded-xl text-muted hover:text-accent hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-2.5 rounded-xl text-muted hover:text-accent hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(211,161,94,0.2)] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
             title="Start Audio Call"
           >
             <Phone className="w-5 h-5" />
@@ -129,7 +129,7 @@ export function ChatMain({ chatId }: ChatMainProps) {
           <button
             onClick={() => startCall(chatId, "video")}
             disabled={callState !== "idle" || chat.isBlocked}
-            className="p-2.5 rounded-xl text-muted hover:text-accent hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-2.5 rounded-xl text-muted hover:text-accent hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(211,161,94,0.2)] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
             title="Start Video Call"
           >
             <Video className="w-5 h-5" />
@@ -146,7 +146,7 @@ export function ChatMain({ chatId }: ChatMainProps) {
             onClick={() => setShowInfo(!showInfo)}
             className={clsx(
               "p-2.5 rounded-xl transition-all duration-300",
-              showInfo ? "text-accent bg-accent/10 border border-accent/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]" : "text-muted hover:text-fg hover:bg-surface-3/50"
+              showInfo ? "text-accent bg-accent/10 border border-accent/20 shadow-[0_0_15px_rgba(211,161,94,0.2)]" : "text-muted hover:text-fg hover:bg-surface-3/50"
             )}
             title="Chat Info Drawer"
           >

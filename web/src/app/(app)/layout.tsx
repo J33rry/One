@@ -41,7 +41,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {/* App Logo Mark */}
           <Link
             href="/"
-            className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-emerald-700 flex items-center justify-center text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] mb-6 border border-accent-hover/30 hover:scale-105 transition-all duration-300"
+            className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-accent-hover flex items-center justify-center text-white shadow-[0_0_20px_rgba(211,161,94,0.3)] mb-6 border border-accent-hover/30 hover:scale-105 transition-all duration-300"
             title="ONE Messaging"
           >
             <ShieldCheck className="w-5 h-5" />

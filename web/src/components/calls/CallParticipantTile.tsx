@@ -24,8 +24,8 @@ export function CallParticipantTile({
   return (
     <div
       className={clsx(
-        "relative rounded-2xl overflow-hidden bg-zinc-900/90 border border-zinc-800/80 flex items-center justify-center shadow-xl transition-all",
-        isLocal ? "w-40 h-52 shadow-2xl border-emerald-500/30" : "w-full h-full min-h-[220px]"
+        "relative rounded-2xl overflow-hidden bg-surface-2 border border-border flex items-center justify-center shadow-[var(--shadow-md)] transition-all",
+        isLocal ? "w-40 h-52 shadow-[var(--shadow-lg)] border-accent/40" : "w-full h-full min-h-[220px]"
       )}
     >
       {isVideo && hasTrack ? (
@@ -35,11 +35,11 @@ export function CallParticipantTile({
         />
       ) : (
         <div className="flex flex-col items-center gap-3">
-          <div className="w-20 h-20 rounded-full bg-zinc-800 border-2 border-zinc-700/60 flex items-center justify-center shadow-inner">
-            <User className="w-10 h-10 text-emerald-400" />
+          <div className="w-20 h-20 rounded-full bg-surface-3 border-2 border-border flex items-center justify-center shadow-inner">
+            <User className="w-10 h-10 text-accent" />
           </div>
           {displayName && (
-            <span className="text-xs text-zinc-300 font-semibold">{displayName}</span>
+            <span className="text-xs text-muted font-semibold">{displayName}</span>
           )}
         </div>
       )}
@@ -52,7 +52,7 @@ export function CallParticipantTile({
           </span>
         )}
         {isMuted && (
-          <span className="bg-red-500/80 p-1.5 rounded-full ml-auto shadow-md">
+          <span className="bg-danger/80 p-1.5 rounded-full ml-auto shadow-md">
             <MicOff className="w-3.5 h-3.5 text-white" />
           </span>
         )}

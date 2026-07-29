@@ -105,7 +105,7 @@ export function ChatSettingsModal({ chatId, onClose }: ChatSettingsModalProps) {
   if (isLoading || !data) {
     return (
       <Modal isOpen={true} onClose={onClose} title="Loading...">
-        <div className="p-8 text-center text-xs text-zinc-500">Loading details...</div>
+        <div className="p-8 text-center text-xs text-faint">Loading details...</div>
       </Modal>
     );
   }
@@ -125,7 +125,7 @@ export function ChatSettingsModal({ chatId, onClose }: ChatSettingsModalProps) {
         {/* Info Section */}
         {isGroup && (
           <div className="space-y-4">
-            <h3 className="text-xs font-mono font-semibold text-zinc-400 uppercase tracking-wider">
+            <h3 className="text-xs font-mono font-semibold text-muted uppercase tracking-wider">
               Group Info
             </h3>
             <div className="space-y-3">
@@ -159,13 +159,13 @@ export function ChatSettingsModal({ chatId, onClose }: ChatSettingsModalProps) {
         {/* Participants Section */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-xs font-mono font-semibold text-zinc-400 uppercase tracking-wider">
+            <h3 className="text-xs font-mono font-semibold text-muted uppercase tracking-wider">
               Participants ({data.participants?.length || 0})
             </h3>
             {isGroup && isAdmin && !showAddMembers && (
               <button
                 onClick={() => setShowAddMembers(true)}
-                className="flex items-center gap-1 text-xs font-semibold text-emerald-400 hover:text-emerald-300"
+                className="flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-hover"
               >
                 <UserPlus className="w-3.5 h-3.5" />
                 Add Members
@@ -175,12 +175,12 @@ export function ChatSettingsModal({ chatId, onClose }: ChatSettingsModalProps) {
 
           {/* Add Members Drawer */}
           {showAddMembers && (
-            <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 space-y-3">
+            <div className="bg-surface-2/40 border border-border rounded-2xl p-4 space-y-3">
               <div className="flex justify-between items-center">
-                <h4 className="text-xs font-bold text-white">Select Contacts</h4>
+                <h4 className="text-xs font-bold text-fg">Select Contacts</h4>
                 <button
                   onClick={() => setShowAddMembers(false)}
-                  className="text-zinc-500 hover:text-white"
+                  className="text-faint hover:text-fg"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -207,19 +207,19 @@ export function ChatSettingsModal({ chatId, onClose }: ChatSettingsModalProps) {
                               : [...prev, contactUser.id]
                           )
                         }
-                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/60 cursor-pointer transition-colors"
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-2/60 cursor-pointer transition-colors"
                       >
                         <input
                           type="checkbox"
                           checked={isSelected}
                           readOnly
-                          className="w-4 h-4 rounded border-zinc-700 text-emerald-500 bg-zinc-900"
+                          className="w-4 h-4 rounded border-border text-accent bg-surface-2"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-white truncate">
+                          <p className="text-xs font-semibold text-fg truncate">
                             {contactUser.displayName}
                           </p>
-                          <p className="text-[11px] text-zinc-500 truncate">
+                          <p className="text-[11px] text-faint truncate">
                             @{contactUser.username}
                           </p>
                         </div>
@@ -245,7 +245,7 @@ export function ChatSettingsModal({ chatId, onClose }: ChatSettingsModalProps) {
             {data.participants?.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-zinc-800/40 group transition-colors"
+                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-2/40 group transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar
@@ -256,11 +256,11 @@ export function ChatSettingsModal({ chatId, onClose }: ChatSettingsModalProps) {
                     isOnline={isOnline(p.userId)}
                   />
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-white truncate flex items-center gap-1.5">
+                    <p className="text-xs font-semibold text-fg truncate flex items-center gap-1.5">
                       {p.userId === currentUser?.id ? "You" : p.user?.displayName}
-                      {p.role === "admin" && <Shield className="w-3.5 h-3.5 text-emerald-400" />}
+                      {p.role === "admin" && <Shield className="w-3.5 h-3.5 text-accent" />}
                     </p>
-                    <p className="text-[11px] text-zinc-500 font-mono truncate">
+                    <p className="text-[11px] text-faint font-mono truncate">
                       @{p.user?.username}
                     </p>
                   </div>
@@ -272,7 +272,7 @@ export function ChatSettingsModal({ chatId, onClose }: ChatSettingsModalProps) {
                       <button
                         onClick={() => promoteMutation.mutate(p.userId)}
                         disabled={promoteMutation.isPending}
-                        className="p-1.5 text-zinc-400 hover:text-emerald-400 rounded-lg hover:bg-zinc-800 transition-colors"
+                        className="p-1.5 text-muted hover:text-accent rounded-lg hover:bg-surface-2 transition-colors"
                         title="Make Admin"
                       >
                         <ShieldAlert className="w-4 h-4" />
@@ -285,7 +285,7 @@ export function ChatSettingsModal({ chatId, onClose }: ChatSettingsModalProps) {
                         }
                       }}
                       disabled={removeMemberMutation.isPending}
-                      className="p-1.5 text-zinc-400 hover:text-red-400 rounded-lg hover:bg-zinc-800 transition-colors"
+                      className="p-1.5 text-muted hover:text-danger rounded-lg hover:bg-surface-2 transition-colors"
                       title="Remove Member"
                     >
                       <UserMinus className="w-4 h-4" />
@@ -298,10 +298,10 @@ export function ChatSettingsModal({ chatId, onClose }: ChatSettingsModalProps) {
         </div>
 
         {/* Danger Zone */}
-        <div className="pt-4 border-t border-zinc-800 space-y-3">
+        <div className="pt-4 border-t border-border space-y-3">
           <Button
             variant="outline"
-            className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/10 border-red-500/30"
+            className="w-full text-danger hover:text-danger hover:bg-danger/10 border-danger/30"
             leftIcon={<LogOut className="w-4 h-4" />}
             isLoading={leaveMutation.isPending}
             onClick={() => {

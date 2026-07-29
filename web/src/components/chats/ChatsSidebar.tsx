@@ -103,7 +103,7 @@ export function ChatsSidebar() {
         <h2 className="text-2xl font-bold text-fg tracking-tight font-display">Messages</h2>
         <button
           onClick={() => setIsNewChatOpen(true)}
-          className="p-2.5 rounded-full bg-accent/10 text-accent hover:bg-accent/20 border border-accent/20 transition-all duration-300 active:scale-95 flex items-center justify-center shadow-lg hover:shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+          className="p-2.5 rounded-full bg-accent/10 text-accent hover:bg-accent/20 border border-accent/20 transition-all duration-300 active:scale-95 flex items-center justify-center shadow-lg hover:shadow-[0_0_15px_rgba(211,161,94,0.4)]"
           title="New Conversation"
         >
           <Plus className="w-5 h-5" />

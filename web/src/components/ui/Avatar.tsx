@@ -60,27 +60,27 @@ export function Avatar({
     <div className={clsx("relative inline-block shrink-0", className)}>
       <div
         className={clsx(
-          "rounded-full bg-zinc-800 border border-zinc-700/60 overflow-hidden flex items-center justify-center font-semibold text-emerald-400 select-none shadow-sm",
+          "rounded-full bg-surface-2 border border-border overflow-hidden flex items-center justify-center font-semibold text-accent select-none shadow-sm",
           sizeClasses[size]
         )}
       >
         {src ? (
           <img src={src} alt={name || "Avatar"} className="w-full h-full object-cover" />
         ) : isGroup ? (
-          <Users className={clsx("text-zinc-400", iconSizes[size])} />
+          <Users className={clsx("text-muted", iconSizes[size])} />
         ) : name ? (
           <span>{initials}</span>
         ) : (
-          <User className={clsx("text-zinc-400", iconSizes[size])} />
+          <User className={clsx("text-muted", iconSizes[size])} />
         )}
       </div>
 
       {showPresence && !isGroup && (
         <span
           className={clsx(
-            "absolute bottom-0 right-0 rounded-full ring-zinc-950",
+            "absolute bottom-0 right-0 rounded-full ring-bg",
             indicatorSizes[size],
-            isOnline ? "bg-emerald-500" : "bg-zinc-600"
+            isOnline ? "bg-success" : "bg-faint"
           )}
           title={isOnline ? "Online" : "Offline"}
         />

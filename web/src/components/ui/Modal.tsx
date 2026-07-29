@@ -51,25 +51,25 @@ export function Modal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
       {/* Dialog box */}
       <div
         className={clsx(
-          "relative z-10 w-full bg-zinc-900 border border-zinc-800/90 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200",
+          "relative z-10 w-full bg-surface border border-border rounded-2xl shadow-[var(--shadow-lg)] overflow-hidden flex flex-col max-h-[90vh] animate-in-slide",
           maxWidthClasses[maxWidth]
         )}
         onClick={(e) => e.stopPropagation()}
       >
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/80 bg-zinc-950/60">
-            <h3 className="text-base font-bold text-zinc-100">{title}</h3>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-2/50">
+            <h3 className="font-display text-base font-semibold text-fg tracking-tight">{title}</h3>
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800/80 transition-colors"
+                className="text-muted hover:text-fg p-1 rounded-lg hover:bg-surface-3 transition-colors"
                 title="Close"
               >
                 <X className="w-4 h-4" />
@@ -80,7 +80,7 @@ export function Modal({
         {!title && showCloseButton && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-20 text-zinc-400 hover:text-white p-1.5 rounded-lg bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 transition-colors"
+            className="absolute top-4 right-4 z-20 text-muted hover:text-fg p-1.5 rounded-lg bg-surface/80 hover:bg-surface-3 border border-border transition-colors"
             title="Close"
           >
             <X className="w-4 h-4" />

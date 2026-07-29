@@ -2,81 +2,120 @@
 
 /*
  * ============================================================
- *  DESIGN TOKENS — "Neo-Obsidian & Emerald"
- *  A highly polished, dark-mode-first aesthetic with deep space
- *  backgrounds, frosted glass, and vibrant emerald accents.
+ *  DESIGN TOKENS — "Dark editorial / warm sepia"
+ *  Typography-led, warm neutrals, one restrained amber accent.
+ *  Two modes. Selection order:
+ *    1. Explicit user choice  -> [data-theme="light"|"dark"] (ThemeToggle, wins)
+ *    2. No choice             -> follows OS via prefers-color-scheme
+ *    3. Fallback              -> dark
+ *  Components consume ONLY the semantic utilities generated below
+ *  (bg-bg, bg-surface, text-fg, text-muted, text-accent, ...).
+ *  Legacy aliases are kept so older surfaces stay intact.
  * ============================================================
  */
 
 :root {
-  /* ---- Deep Obsidian Dark ---- */
-  --bg: #09090b; /* Zinc 950 */
-  --surface: #18181b; /* Zinc 900 */
-  --surface-2: #27272a; /* Zinc 800 */
-  --surface-3: #3f3f46; /* Zinc 700 */
-  
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.15);
-  --border-glow: rgba(16, 185, 129, 0.2);
-  
-  --fg: #fafafa;
-  --muted: #a1a1aa; /* Zinc 400 */
-  --faint: #71717a; /* Zinc 500 */
-  
-  --accent: #10b981; /* Emerald 500 */
-  --accent-hover: #34d399; /* Emerald 400 */
-  --accent-fg: #022c22;
-  --accent-muted: rgba(16, 185, 129, 0.15);
-  
-  --danger: #ef4444; /* Red 500 */
-  --danger-fg: #450a0a;
-  --success: #10b981;
+  /* ---- Dark (warm ink) — default ---- */
+  --bg: #100e0b;
+  --surface: #17140f;
+  --surface-2: #201c16;
+  --surface-3: #2a251d;
 
-  --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.6);
-  --shadow-md: 0 12px 32px -8px rgba(0, 0, 0, 0.8);
-  --shadow-lg: 0 32px 80px -16px rgba(0, 0, 0, 0.9);
+  --border: rgba(240, 233, 218, 0.08);
+  --border-strong: rgba(240, 233, 218, 0.15);
+  --border-glow: rgba(211, 161, 94, 0.22);
 
-  --radius: 1rem;
+  --fg: #f3eee3;
+  --muted: #ada595;
+  --faint: #766d5f;
+
+  --accent: #d3a15e;
+  --accent-hover: #e0b477;
+  --accent-fg: #1a1509;
+  --accent-muted: rgba(211, 161, 94, 0.14);
+
+  --danger: #d9776a;
+  --danger-fg: #1a0e0c;
+  --success: #5fb87f;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, 0.72);
+
+  --radius: 0.625rem;
 
   color-scheme: dark;
 }
 
-/* Explicit choice — force dark mode for this premium vibe, though we can still support light later */
+/* System preference applies ONLY when the user hasn't chosen explicitly */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --bg: #f4efe6;
+    --surface: #fbf8f2;
+    --surface-2: #ece5d8;
+    --surface-3: #e2dacb;
+
+    --border: rgba(28, 24, 18, 0.1);
+    --border-strong: rgba(28, 24, 18, 0.17);
+    --border-glow: rgba(181, 122, 47, 0.22);
+
+    --fg: #1c1a15;
+    --muted: #5f574a;
+    --faint: #8a8073;
+
+    --accent: #b57a2f;
+    --accent-hover: #9c661f;
+    --accent-fg: #fffaf0;
+    --accent-muted: rgba(181, 122, 47, 0.14);
+
+    --danger: #b5443a;
+    --danger-fg: #fff5f3;
+    --success: #3f8f5a;
+
+    --shadow-sm: 0 1px 2px rgba(51, 42, 26, 0.08);
+    --shadow-md: 0 8px 24px -14px rgba(51, 42, 26, 0.22);
+    --shadow-lg: 0 24px 60px -22px rgba(51, 42, 26, 0.28);
+
+    color-scheme: light;
+  }
+}
+
+/* Explicit choice — always wins over system */
 :root[data-theme="dark"] {
   color-scheme: dark;
 }
 
 :root[data-theme="light"] {
-  --bg: #f8fafc;
-  --surface: #ffffff;
-  --surface-2: #f1f5f9;
-  --surface-3: #e2e8f0;
-  
-  --border: rgba(0, 0, 0, 0.08);
-  --border-strong: rgba(0, 0, 0, 0.15);
-  --border-glow: rgba(16, 185, 129, 0.2);
-  
-  --fg: #0f172a;
-  --muted: #64748b;
-  --faint: #94a3b8;
-  
-  --accent: #10b981;
-  --accent-hover: #059669;
-  --accent-fg: #ffffff;
-  --accent-muted: rgba(16, 185, 129, 0.1);
-  
-  --danger: #ef4444;
-  --danger-fg: #ffffff;
-  --success: #10b981;
+  --bg: #f4efe6;
+  --surface: #fbf8f2;
+  --surface-2: #ece5d8;
+  --surface-3: #e2dacb;
 
-  --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 12px 32px -8px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 32px 80px -16px rgba(0, 0, 0, 0.15);
+  --border: rgba(28, 24, 18, 0.1);
+  --border-strong: rgba(28, 24, 18, 0.17);
+  --border-glow: rgba(181, 122, 47, 0.22);
+
+  --fg: #1c1a15;
+  --muted: #5f574a;
+  --faint: #8a8073;
+
+  --accent: #b57a2f;
+  --accent-hover: #9c661f;
+  --accent-fg: #fffaf0;
+  --accent-muted: rgba(181, 122, 47, 0.14);
+
+  --danger: #b5443a;
+  --danger-fg: #fff5f3;
+  --success: #3f8f5a;
+
+  --shadow-sm: 0 1px 2px rgba(51, 42, 26, 0.08);
+  --shadow-md: 0 8px 24px -14px rgba(51, 42, 26, 0.22);
+  --shadow-lg: 0 24px 60px -22px rgba(51, 42, 26, 0.28);
 
   color-scheme: light;
 }
 
-/* ---- Legacy aliases ---- */
+/* ---- Legacy aliases (keep older surfaces working) ---- */
 :root,
 :root[data-theme] {
   --background: var(--bg);
@@ -91,7 +130,7 @@
 }
 
 @theme inline {
-  /* Semantic color scale */
+  /* Semantic color scale — generates bg, text, border and ring utilities */
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
@@ -110,7 +149,7 @@
   --color-danger-fg: var(--danger-fg);
   --color-success: var(--success);
 
-  /* Legacy names */
+  /* Legacy names still referenced by older components */
   --color-background: var(--bg);
   --color-foreground: var(--fg);
   --color-surface-primary: var(--surface);
@@ -118,13 +157,9 @@
   --color-surface-tertiary: var(--surface-3);
 
   /* Type families */
-  --font-display: var(--font-fraunces), Georgia, serif;
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), monospace;
-  
-  /* Radii */
-  --radius-xl: 1.5rem;
-  --radius-2xl: 2rem;
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 html,
@@ -143,10 +178,10 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Hairline scrollbars */
+/* Hairline scrollbars, tokenized */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -160,52 +195,60 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--muted);
+  background: var(--faint);
 }
 
-a:focus-visible, button:focus-visible {
+/* Accessible focus for bare links/buttons (components define their own rings) */
+a:focus-visible,
+button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* ---- Modern Glassmorphism & UI Utilities ---- */
+/* ---- UI utilities, retinted to the editorial palette ---- */
 .glass-panel {
-  background: color-mix(in srgb, var(--surface) 60%, transparent);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-md);
 }
 
 .glass-panel-subtle {
-  background: color-mix(in srgb, var(--surface) 30%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--border);
 }
 
 .glass-pill {
-  background: color-mix(in srgb, var(--surface-2) 75%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: color-mix(in srgb, var(--surface-2) 80%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--border-strong);
   border-radius: 9999px;
   box-shadow: var(--shadow-sm);
 }
 
 .glow-emerald {
-  box-shadow: 0 0 32px -8px var(--accent);
+  box-shadow: 0 0 24px -8px var(--accent-muted);
 }
 
+/* Editorial hairline rule */
 .rule {
   border: 0;
   border-top: 1px solid var(--border);
 }
 
+/* Subtle shimmer for skeletons */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .animate-shimmer {
@@ -216,21 +259,30 @@ a:focus-visible, button:focus-visible {
     color-mix(in srgb, var(--surface-2) 60%, transparent) 100%
   );
   background-size: 200% 100%;
-  animation: shimmer 2s infinite linear;
+  animation: shimmer 1.8s infinite linear;
 }
 
-/* Micro-animations */
+/* Micro-animation used by shell popovers */
 @keyframes slideUpFade {
-  from { opacity: 0; transform: translateY(12px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .animate-in-slide {
   animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Respect reduced-motion everywhere */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;

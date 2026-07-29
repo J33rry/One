@@ -178,7 +178,7 @@ function CallContent({ callType }: { callType: "audio" | "video" }) {
                 {remoteParticipants.map((p, i) => (
                   <div
                     key={p.sid}
-                    className="w-32 h-32 rounded-full glass-panel border-2 border-accent/40 flex items-center justify-center shadow-[0_0_40px_rgba(16,185,129,0.15)] relative z-10"
+                    className="w-32 h-32 rounded-full glass-panel border-2 border-accent/40 flex items-center justify-center shadow-[0_0_40px_rgba(211,161,94,0.15)] relative z-10"
                     style={{ zIndex: 10 - i }}
                   >
                     <span className="text-4xl font-bold text-accent font-display">
@@ -232,7 +232,7 @@ function CallContent({ callType }: { callType: "audio" | "video" }) {
               "w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-all duration-300",
               isMuted
                 ? "bg-danger/20 text-danger border border-danger/40 hover:bg-danger/30"
-                : "bg-surface-3/50 text-fg hover:bg-surface-3 hover:text-white"
+                : "bg-surface-3/50 text-fg hover:bg-surface-3 hover:text-fg"
             )}
             title={isMuted ? "Unmute" : "Mute"}
           >
@@ -245,7 +245,7 @@ function CallContent({ callType }: { callType: "audio" | "video" }) {
               "w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-all duration-300",
               !isVideoOn
                 ? "bg-danger/20 text-danger border border-danger/40 hover:bg-danger/30"
-                : "bg-surface-3/50 text-fg hover:bg-surface-3 hover:text-white"
+                : "bg-surface-3/50 text-fg hover:bg-surface-3 hover:text-fg"
             )}
             title={isVideoOn ? "Turn off camera" : "Turn on camera"}
           >

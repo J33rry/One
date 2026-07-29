@@ -121,14 +121,14 @@ export default function ContactsPage() {
   );
 
   return (
-    <div className="flex-1 flex overflow-hidden bg-zinc-950 select-none">
+    <div className="flex-1 flex overflow-hidden bg-bg select-none">
       {/* User Search Panel */}
-      <div className="w-full md:w-80 lg:w-96 shrink-0 border-r border-zinc-800/80 bg-zinc-950/80 flex flex-col">
-        <div className="h-16 flex items-center px-4 border-b border-zinc-800/80 shrink-0">
-          <h2 className="text-xl font-bold text-white tracking-tight">Find People</h2>
+      <div className="w-full md:w-80 lg:w-96 shrink-0 border-r border-border bg-transparent flex flex-col">
+        <div className="h-[72px] flex items-center px-6 border-b border-border shrink-0">
+          <h2 className="text-xl font-semibold text-fg tracking-tight font-display">Find People</h2>
         </div>
 
-        <div className="p-4 border-b border-zinc-800/60 shrink-0">
+        <div className="p-4 border-b border-border shrink-0">
           <Input
             type="text"
             value={searchQuery}
@@ -152,7 +152,7 @@ export default function ContactsPage() {
               ))}
             </div>
           ) : (
-            <ul className="divide-y divide-zinc-800/40">
+            <ul className="divide-y divide-border">
               {searchResults.map((user) => {
                 const isSelf = currentUser?.id === user.id;
                 const existingContact = contacts?.find(
@@ -164,7 +164,7 @@ export default function ContactsPage() {
                 return (
                   <li
                     key={user.id}
-                    className="p-4 flex items-center justify-between hover:bg-zinc-900/50 transition-colors"
+                    className="p-4 flex items-center justify-between hover:bg-surface-2/40 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <Avatar
@@ -175,14 +175,14 @@ export default function ContactsPage() {
                         isOnline={isUserOnline}
                       />
                       <div>
-                        <p className="text-sm font-semibold text-white">{user.displayName}</p>
+                        <p className="text-sm font-semibold text-fg">{user.displayName}</p>
                         <div className="flex items-center gap-2 text-xs">
-                          <span className="text-zinc-500 font-mono">@{user.username}</span>
-                          <span className="text-zinc-700">•</span>
+                          <span className="text-faint font-mono">@{user.username}</span>
+                          <span className="text-faint">•</span>
                           {isUserOnline ? (
-                            <span className="text-emerald-400 font-medium text-[11px]">Online</span>
+                            <span className="text-accent font-medium text-[11px]">Online</span>
                           ) : (
-                            <span className="text-zinc-400 text-[11px]">
+                            <span className="text-muted text-[11px]">
                               {formatLastSeen(getLastSeen(user.id) || user.lastSeenAt)}
                             </span>
                           )}
@@ -204,7 +204,7 @@ export default function ContactsPage() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        leftIcon={<UserPlus className="w-4 h-4 text-emerald-400" />}
+                        leftIcon={<UserPlus className="w-4 h-4 text-accent" />}
                         isLoading={sendRequestMutation.isPending}
                         onClick={() => sendRequestMutation.mutate(user.id)}
                         title="Add Contact"
@@ -214,7 +214,7 @@ export default function ContactsPage() {
                 );
               })}
               {searchResults.length === 0 && searchQuery && !isSearching && (
-                <div className="p-8 text-center text-xs text-zinc-500">
+                <div className="p-8 text-center text-xs text-faint">
                   No users found matching &quot;{searchQuery}&quot;
                 </div>
               )}
@@ -224,11 +224,11 @@ export default function ContactsPage() {
       </div>
 
       {/* Main Contacts Area */}
-      <div className="flex-1 flex flex-col bg-zinc-950 overflow-y-auto p-6 sm:p-10">
+      <div className="flex-1 flex flex-col bg-bg overflow-y-auto p-6 sm:p-10">
         <div className="max-w-4xl space-y-8">
           <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Contacts Directory</h1>
-            <p className="text-xs text-zinc-400 mt-1">
+            <h1 className="font-display text-2xl font-semibold text-fg tracking-tight">Contacts Directory</h1>
+            <p className="text-xs text-muted mt-1">
               Manage your connections, pending requests, and blocked users.
             </p>
           </div>
@@ -244,12 +244,12 @@ export default function ContactsPage() {
               {incomingRequests.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <h3 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                    <h3 className="text-xs font-mono font-bold text-accent uppercase tracking-wider flex items-center gap-2">
                       <Clock className="w-4 h-4" /> Pending Contact Requests ({incomingRequests.length})
                     </h3>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <ul className="divide-y divide-zinc-800/60">
+                    <ul className="divide-y divide-border">
                       {incomingRequests.map((contact) => (
                         <li key={contact.id} className="p-4 flex items-center justify-between">
                           <div className="flex items-center gap-3.5">
@@ -261,10 +261,10 @@ export default function ContactsPage() {
                               isOnline={isOnline(contact.contactUser?.id)}
                             />
                             <div>
-                              <p className="text-sm font-semibold text-white">
+                              <p className="text-sm font-semibold text-fg">
                                 {contact.contactUser?.displayName}
                               </p>
-                              <p className="text-xs text-zinc-500 font-mono">
+                              <p className="text-xs text-faint font-mono">
                                 @{contact.contactUser?.username}
                               </p>
                             </div>
@@ -306,12 +306,12 @@ export default function ContactsPage() {
               {outgoingRequests.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <h3 className="text-xs font-mono font-semibold text-zinc-400 uppercase tracking-wider">
+                    <h3 className="text-xs font-mono font-semibold text-muted uppercase tracking-wider">
                       Sent Requests ({outgoingRequests.length})
                     </h3>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <ul className="divide-y divide-zinc-800/60">
+                    <ul className="divide-y divide-border">
                       {outgoingRequests.map((contact) => (
                         <li key={contact.id} className="p-4 flex items-center justify-between opacity-80">
                           <div className="flex items-center gap-3.5">
@@ -321,10 +321,10 @@ export default function ContactsPage() {
                               size="md"
                             />
                             <div>
-                              <p className="text-sm font-semibold text-white">
+                              <p className="text-sm font-semibold text-fg">
                                 {contact.contactUser?.displayName}
                               </p>
-                              <p className="text-xs text-zinc-500 font-mono">
+                              <p className="text-xs text-faint font-mono">
                                 @{contact.contactUser?.username}
                               </p>
                             </div>
@@ -340,17 +340,17 @@ export default function ContactsPage() {
               {/* Accepted Connected Contacts */}
               <Card>
                 <CardHeader>
-                  <h3 className="text-xs font-mono font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                    <Users className="w-4 h-4 text-emerald-400" /> Connected Contacts ({acceptedContacts.length})
+                  <h3 className="text-xs font-mono font-semibold text-muted uppercase tracking-wider flex items-center gap-2">
+                    <Users className="w-4 h-4 text-accent" /> Connected Contacts ({acceptedContacts.length})
                   </h3>
                 </CardHeader>
                 <CardContent className="p-0">
                   {acceptedContacts.length === 0 ? (
-                    <div className="p-8 text-center text-xs text-zinc-500">
+                    <div className="p-8 text-center text-xs text-faint">
                       You have no contacts yet. Search for users in the sidebar to add them.
                     </div>
                   ) : (
-                    <ul className="divide-y divide-zinc-800/60">
+                    <ul className="divide-y divide-border">
                       {acceptedContacts.map((contact) => {
                         const target = contact.contactUser;
                         if (!target) return null;
@@ -359,7 +359,7 @@ export default function ContactsPage() {
                         return (
                           <li
                             key={contact.id}
-                            className="p-4 flex items-center justify-between group hover:bg-zinc-900/40 transition-colors"
+                            className="p-4 flex items-center justify-between group hover:bg-surface-2/40 transition-colors"
                           >
                             <div className="flex items-center gap-3.5">
                               <Avatar
@@ -370,10 +370,10 @@ export default function ContactsPage() {
                                 isOnline={targetOnline}
                               />
                               <div>
-                                <p className="text-sm font-semibold text-white">
+                                <p className="text-sm font-semibold text-fg">
                                   {target.displayName}
                                 </p>
-                                <p className="text-xs text-zinc-500 font-mono">
+                                <p className="text-xs text-faint font-mono">
                                   @{target.username}
                                 </p>
                               </div>
@@ -383,14 +383,14 @@ export default function ContactsPage() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                leftIcon={<UserMinus className="w-4 h-4 text-red-400" />}
+                                leftIcon={<UserMinus className="w-4 h-4 text-danger" />}
                                 onClick={() => deleteContactMutation.mutate(contact.id)}
                                 title="Remove Contact"
                               />
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                leftIcon={<ShieldAlert className="w-4 h-4 text-red-400" />}
+                                leftIcon={<ShieldAlert className="w-4 h-4 text-danger" />}
                                 onClick={() => blockUserMutation.mutate(contact.contactId)}
                                 title="Block User"
                               />
@@ -405,14 +405,14 @@ export default function ContactsPage() {
 
               {/* Blocked Users Section */}
               {blockedUsers && blockedUsers.length > 0 && (
-                <Card className="border-red-900/30">
+                <Card className="border-danger/30">
                   <CardHeader>
-                    <h3 className="text-xs font-mono font-bold text-red-400 uppercase tracking-wider flex items-center gap-2">
+                    <h3 className="text-xs font-mono font-bold text-danger uppercase tracking-wider flex items-center gap-2">
                       <Shield className="w-4 h-4" /> Blocked Users ({blockedUsers.length})
                     </h3>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <ul className="divide-y divide-zinc-800/60">
+                    <ul className="divide-y divide-border">
                       {blockedUsers.map((blocked) => (
                         <li key={blocked.id} className="p-4 flex items-center justify-between">
                           <div className="flex items-center gap-3.5 opacity-60">
@@ -422,10 +422,10 @@ export default function ContactsPage() {
                               size="md"
                             />
                             <div>
-                              <p className="text-sm font-semibold text-white line-through">
+                              <p className="text-sm font-semibold text-fg line-through">
                                 {blocked.blockedUser?.displayName}
                               </p>
-                              <p className="text-xs text-zinc-500 font-mono">
+                              <p className="text-xs text-faint font-mono">
                                 @{blocked.blockedUser?.username}
                               </p>
                             </div>

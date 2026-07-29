@@ -154,7 +154,7 @@ function MessageBubble({
                         msg.isDeleted
                             ? "bg-surface-2 border border-border italic text-faint"
                             : isMe
-                              ? "bg-accent text-accent-fg rounded-br-sm shadow-[0_4px_20px_rgba(16,185,129,0.15)]"
+                              ? "bg-accent text-accent-fg rounded-br-sm shadow-[0_4px_20px_rgba(211,161,94,0.15)]"
                               : "glass-panel text-fg rounded-bl-sm",
                     )}
                 >
@@ -444,7 +444,7 @@ function MessageBubble({
                                     className={clsx(
                                         "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all shadow-sm",
                                         me
-                                            ? "bg-accent/20 text-accent border border-accent/30 shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                                            ? "bg-accent/20 text-accent border border-accent/30 shadow-[0_0_10px_rgba(211,161,94,0.1)]"
                                             : "glass-pill text-muted hover:text-fg hover:bg-surface-3/30 border border-border",
                                     )}
                                 >

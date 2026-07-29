@@ -22,9 +22,9 @@ export function CallsSidebar() {
   const calls = data?.calls || [];
 
   return (
-    <div className="w-80 bg-zinc-950/80 border-r border-zinc-800/80 flex flex-col shrink-0 overflow-hidden select-none">
-      <div className="h-16 flex items-center justify-between px-4 border-b border-zinc-800/80 shrink-0">
-        <h2 className="text-xl font-bold text-white tracking-tight">Call History</h2>
+    <div className="w-80 bg-transparent border-r border-border flex flex-col shrink-0 overflow-hidden select-none">
+      <div className="h-[72px] flex items-center justify-between px-6 border-b border-border shrink-0">
+        <h2 className="text-2xl font-bold text-fg tracking-tight font-display">Call History</h2>
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -32,13 +32,13 @@ export function CallsSidebar() {
           <ChatListSkeleton />
         ) : calls.length === 0 ? (
           <div className="p-8 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-500">
+            <div className="w-12 h-12 rounded-full bg-surface-2 border border-border flex items-center justify-center mx-auto text-faint">
               <PhoneCall className="w-6 h-6" />
             </div>
-            <p className="text-xs text-zinc-500">No recent calls.</p>
+            <p className="text-xs text-faint">No recent calls.</p>
           </div>
         ) : (
-          <div className="divide-y divide-zinc-800/40">
+          <div className="divide-y divide-border">
             {calls.map((call) => {
               const isMissed =
                 !call.endedAt &&
@@ -58,7 +58,7 @@ export function CallsSidebar() {
               return (
                 <div
                   key={call.id}
-                  className="p-3.5 hover:bg-zinc-900/40 transition-colors cursor-pointer flex items-center gap-3"
+                  className="p-3.5 hover:bg-surface-2/40 transition-colors cursor-pointer flex items-center gap-3"
                 >
                   <Avatar
                     src={call.initiator?.avatarUrl}
@@ -73,23 +73,23 @@ export function CallsSidebar() {
                       <h3
                         className={clsx(
                           "font-semibold truncate text-xs",
-                          isMissed && !isOutgoing ? "text-red-400" : "text-zinc-100"
+                          isMissed && !isOutgoing ? "text-danger" : "text-fg"
                         )}
                       >
                         {displayName || "Unknown Chat"}
                       </h3>
-                      <span className="text-[10px] text-zinc-500 font-mono">
+                      <span className="text-[10px] text-faint font-mono">
                         {format(new Date(call.startedAt), "MMM d")}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+                    <div className="flex items-center gap-1.5 text-[11px] text-muted">
                       {isMissed ? (
-                        <PhoneMissed className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                        <PhoneMissed className="w-3.5 h-3.5 text-danger shrink-0" />
                       ) : call.type === "video" ? (
-                        <Video className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <Video className="w-3.5 h-3.5 text-accent shrink-0" />
                       ) : (
-                        <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <Phone className="w-3.5 h-3.5 text-accent shrink-0" />
                       )}
                       <span>
                         {isOutgoing ? "Outgoing" : "Incoming"}{" "}

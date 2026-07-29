@@ -123,7 +123,7 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
     >
       <div className="flex flex-col gap-4 p-6">
         {/* Type Toggle Tabs */}
-        <div className="flex border border-zinc-800 bg-zinc-950/60 p-1 rounded-xl">
+        <div className="flex border border-border bg-surface-2/60 p-1 rounded-xl">
           <button
             type="button"
             onClick={() => {
@@ -133,11 +133,11 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
             className={clsx(
               "flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all",
               type === "dm"
-                ? "bg-zinc-800 text-white shadow-md border border-zinc-700/60"
-                : "text-zinc-400 hover:text-white"
+                ? "bg-surface text-fg shadow-md border border-border"
+                : "text-muted hover:text-fg"
             )}
           >
-            <User className="w-4 h-4 text-emerald-400" />
+            <User className="w-4 h-4 text-accent" />
             Direct Message
           </button>
           <button
@@ -149,17 +149,17 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
             className={clsx(
               "flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all",
               type === "group"
-                ? "bg-zinc-800 text-white shadow-md border border-zinc-700/60"
-                : "text-zinc-400 hover:text-white"
+                ? "bg-surface text-fg shadow-md border border-border"
+                : "text-muted hover:text-fg"
             )}
           >
-            <Users className="w-4 h-4 text-emerald-400" />
+            <Users className="w-4 h-4 text-accent" />
             Group Chat
           </button>
         </div>
 
         {errorMsg && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+          <div className="p-3 rounded-xl bg-danger/10 border border-danger/25 text-danger text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMsg}</span>
           </div>
@@ -187,7 +187,7 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
 
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted">
                 Select {type === "dm" ? "Contact" : "Participants"} ({selectedUserIds.length})
               </label>
             </div>
@@ -197,19 +197,19 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
               placeholder="Search contacts..."
-              leftIcon={<Search className="w-3.5 h-3.5 text-zinc-500" />}
+              leftIcon={<Search className="w-3.5 h-3.5 text-faint" />}
             />
 
             {isLoadingContacts ? (
-              <div className="py-8 text-center text-xs text-zinc-500">Loading contacts...</div>
+              <div className="py-8 text-center text-xs text-faint">Loading contacts...</div>
             ) : filteredContacts.length === 0 ? (
-              <div className="py-8 text-center text-xs text-zinc-500">
+              <div className="py-8 text-center text-xs text-faint">
                 {acceptedContacts.length === 0
                   ? "No contacts found. Add contacts first to start a chat!"
                   : "No matching contacts."}
               </div>
             ) : (
-              <div className="max-h-56 overflow-y-auto divide-y divide-zinc-800/60 border border-zinc-800/80 rounded-xl bg-zinc-950/40 p-1">
+              <div className="max-h-56 overflow-y-auto divide-y divide-border border border-border rounded-xl bg-surface-2/40 p-1">
                 {filteredContacts.map((contact) => {
                   const targetUser = contact.contactUser;
                   if (!targetUser) return null;
@@ -222,7 +222,7 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
                       onClick={() => toggleUserSelection(targetUser.id)}
                       className={clsx(
                         "flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors",
-                        isSelected ? "bg-emerald-500/10 border border-emerald-500/30" : "hover:bg-zinc-800/50"
+                        isSelected ? "bg-accent/10 border border-accent/30" : "hover:bg-surface-2/50"
                       )}
                     >
                       <div className="flex items-center gap-3">
@@ -234,10 +234,10 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
                           isOnline={isUserOnline}
                         />
                         <div>
-                          <p className="text-xs font-semibold text-white">
+                          <p className="text-xs font-semibold text-fg">
                             {targetUser.displayName}
                           </p>
-                          <p className="text-[11px] text-zinc-500 font-mono">
+                          <p className="text-[11px] text-faint font-mono">
                             @{targetUser.username}
                           </p>
                         </div>
@@ -247,8 +247,8 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
                         className={clsx(
                           "w-5 h-5 rounded-md flex items-center justify-center border transition-colors",
                           isSelected
-                            ? "bg-emerald-500 border-emerald-500 text-white"
-                            : "border-zinc-700 bg-zinc-800"
+                            ? "bg-accent border-accent text-accent-fg"
+                            : "border-border bg-surface-2"
                         )}
                       >
                         {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}

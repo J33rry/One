@@ -35,14 +35,14 @@ export function MediaLightbox({ src, type = "image", onClose }: MediaLightboxPro
           target="_blank"
           download
           rel="noreferrer"
-          className="p-2.5 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-white transition-colors border border-zinc-700/60 shadow-lg"
+          className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/15 shadow-lg"
           title="Download"
         >
           <Download className="w-5 h-5" />
         </a>
         <button
           onClick={onClose}
-          className="p-2.5 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-white transition-colors border border-zinc-700/60 shadow-lg"
+          className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/15 shadow-lg"
           title="Close (Esc)"
         >
           <X className="w-5 h-5" />
@@ -59,13 +59,13 @@ export function MediaLightbox({ src, type = "image", onClose }: MediaLightboxPro
             src={src}
             controls
             autoPlay
-            className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl border border-zinc-800"
+            className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl border border-white/10"
           />
         ) : (
           <img
             src={src}
             alt="Media View"
-            className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-zinc-800"
+            className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-white/10"
           />
         )}
       </div>

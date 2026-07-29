@@ -6,14 +6,22 @@ import { MessageSquare } from "lucide-react";
 
 function EmptyChatPane() {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center bg-zinc-950 p-8 text-center">
-      <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mb-4 border border-zinc-800">
-        <MessageSquare className="w-8 h-8 text-zinc-500" />
+    <div className="flex-1 flex flex-col items-center justify-center bg-bg p-8 text-center select-none">
+      <div className="max-w-sm">
+        <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-faint mb-5">
+          One — Messages
+        </p>
+        <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full border border-border text-accent">
+          <MessageSquare className="w-6 h-6" />
+        </div>
+        <h2 className="font-display text-3xl font-semibold text-fg tracking-tight">
+          Select a conversation
+        </h2>
+        <div className="mx-auto my-5 h-px w-16 bg-border" />
+        <p className="text-sm text-muted leading-relaxed">
+          Choose an existing conversation from the sidebar, or start a new one to begin messaging.
+        </p>
       </div>
-      <h3 className="text-xl font-medium text-white mb-2">Select a chat</h3>
-      <p className="text-zinc-400 max-w-sm">
-        Choose an existing conversation from the sidebar or start a new one to begin messaging.
-      </p>
     </div>
   );
 }

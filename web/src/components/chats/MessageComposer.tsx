@@ -211,7 +211,7 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
     >
       {/* Drag & Drop Overlay */}
       {isDragging && (
-        <div className="absolute inset-4 z-40 glass-panel border-2 border-dashed border-accent rounded-3xl flex flex-col items-center justify-center text-accent pointer-events-none shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+        <div className="absolute inset-4 z-40 glass-panel border-2 border-dashed border-accent rounded-3xl flex flex-col items-center justify-center text-accent pointer-events-none shadow-[0_0_30px_rgba(211,161,94,0.2)]">
           <Paperclip className="w-10 h-10 mb-3 animate-bounce" />
           <p className="text-sm font-bold tracking-wide">Drop file to attach</p>
         </div>
@@ -234,10 +234,10 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
         className={clsx(
           "flex flex-col glass-pill transition-all duration-300 shadow-lg mx-auto w-full max-w-4xl relative overflow-visible",
           editingMessage
-            ? "ring-2 ring-accent/50 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+            ? "ring-2 ring-accent/50 shadow-[0_0_20px_rgba(211,161,94,0.2)]"
             : replyingToMessage
             ? "ring-2 ring-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.2)]"
-            : "ring-1 ring-border focus-within:ring-2 focus-within:ring-accent/50 focus-within:shadow-[0_0_20px_rgba(16,185,129,0.1)]"
+            : "ring-1 ring-border focus-within:ring-2 focus-within:ring-accent/50 focus-within:shadow-[0_0_20px_rgba(211,161,94,0.1)]"
         )}
       >
         {/* Reply Active Banner */}
@@ -376,7 +376,7 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
             className={clsx(
               "w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 shadow-lg",
               editingMessage || (content.trim() || selectedFile)
-                ? "bg-accent hover:bg-accent-hover text-accent-fg shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                ? "bg-accent hover:bg-accent-hover text-accent-fg shadow-[0_0_15px_rgba(211,161,94,0.4)]"
                 : "bg-surface-3/50 text-muted cursor-not-allowed shadow-none"
             )}
             title="Send"

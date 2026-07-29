@@ -16,12 +16,13 @@ export function Badge({
   size = "sm",
   className,
 }: BadgeProps) {
+  // NOTE: variant keys are part of the public API — names unchanged, only retinted.
   const variantStyles = {
-    emerald: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-    zinc: "bg-zinc-800 text-zinc-300 border-zinc-700",
+    emerald: "bg-accent/15 text-accent border-accent/30",
+    zinc: "bg-surface-2 text-muted border-border-strong",
     blue: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-    amber: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-    red: "bg-red-500/15 text-red-400 border-red-500/30",
+    amber: "bg-accent/15 text-accent border-accent/30",
+    red: "bg-danger/15 text-danger border-danger/30",
   };
 
   const sizeStyles = {

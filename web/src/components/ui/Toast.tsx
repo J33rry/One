@@ -41,19 +41,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <div
             key={t.id}
             className={clsx(
-              "pointer-events-auto flex items-center gap-3 p-3.5 rounded-xl border shadow-xl backdrop-blur-md animate-in slide-in-from-bottom-2 fade-in duration-200 text-sm text-white font-medium",
-              t.type === "success" && "bg-emerald-950/90 border-emerald-500/40 text-emerald-100",
-              t.type === "error" && "bg-red-950/90 border-red-500/40 text-red-100",
-              t.type === "info" && "bg-zinc-900/95 border-zinc-700 text-zinc-100"
+              "pointer-events-auto flex items-center gap-3 p-3.5 rounded-lg border shadow-[var(--shadow-md)] backdrop-blur-md animate-in-slide text-sm text-fg font-medium bg-surface",
+              t.type === "success" && "border-success/40",
+              t.type === "error" && "border-danger/40",
+              t.type === "info" && "border-border-strong"
             )}
           >
-            {t.type === "success" && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
-            {t.type === "error" && <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />}
-            {t.type === "info" && <Info className="w-4 h-4 text-blue-400 shrink-0" />}
+            {t.type === "success" && <CheckCircle2 className="w-4 h-4 text-success shrink-0" />}
+            {t.type === "error" && <AlertCircle className="w-4 h-4 text-danger shrink-0" />}
+            {t.type === "info" && <Info className="w-4 h-4 text-accent shrink-0" />}
             <span className="flex-1 min-w-0 break-words">{t.message}</span>
             <button
               onClick={() => removeToast(t.id)}
-              className="p-1 text-zinc-400 hover:text-white rounded-md transition-colors shrink-0"
+              className="p-1 text-faint hover:text-fg rounded-md transition-colors shrink-0"
             >
               <X className="w-3.5 h-3.5" />
             </button>
