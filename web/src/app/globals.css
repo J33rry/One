@@ -1,26 +1,130 @@
 @import "tailwindcss";
 
+/*
+ * ============================================================
+ *  DESIGN TOKENS — "Neo-Obsidian & Emerald"
+ *  A highly polished, dark-mode-first aesthetic with deep space
+ *  backgrounds, frosted glass, and vibrant emerald accents.
+ * ============================================================
+ */
+
 :root {
-  --background: #09090b;
-  --foreground: #f4f4f5;
-  --surface-primary: #121215;
-  --surface-secondary: #18181b;
-  --surface-tertiary: #27272a;
-  --border-subtle: rgba(255, 255, 255, 0.07);
-  --border-medium: rgba(255, 255, 255, 0.12);
-  --accent-primary: #10b981;
-  --accent-primary-hover: #059669;
+  /* ---- Deep Obsidian Dark ---- */
+  --bg: #09090b; /* Zinc 950 */
+  --surface: #18181b; /* Zinc 900 */
+  --surface-2: #27272a; /* Zinc 800 */
+  --surface-3: #3f3f46; /* Zinc 700 */
+  
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --border-glow: rgba(16, 185, 129, 0.2);
+  
+  --fg: #fafafa;
+  --muted: #a1a1aa; /* Zinc 400 */
+  --faint: #71717a; /* Zinc 500 */
+  
+  --accent: #10b981; /* Emerald 500 */
+  --accent-hover: #34d399; /* Emerald 400 */
+  --accent-fg: #022c22;
   --accent-muted: rgba(16, 185, 129, 0.15);
+  
+  --danger: #ef4444; /* Red 500 */
+  --danger-fg: #450a0a;
+  --success: #10b981;
+
+  --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 12px 32px -8px rgba(0, 0, 0, 0.8);
+  --shadow-lg: 0 32px 80px -16px rgba(0, 0, 0, 0.9);
+
+  --radius: 1rem;
+
+  color-scheme: dark;
+}
+
+/* Explicit choice — force dark mode for this premium vibe, though we can still support light later */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --surface-3: #e2e8f0;
+  
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.15);
+  --border-glow: rgba(16, 185, 129, 0.2);
+  
+  --fg: #0f172a;
+  --muted: #64748b;
+  --faint: #94a3b8;
+  
+  --accent: #10b981;
+  --accent-hover: #059669;
+  --accent-fg: #ffffff;
+  --accent-muted: rgba(16, 185, 129, 0.1);
+  
+  --danger: #ef4444;
+  --danger-fg: #ffffff;
+  --success: #10b981;
+
+  --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 12px 32px -8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 32px 80px -16px rgba(0, 0, 0, 0.15);
+
+  color-scheme: light;
+}
+
+/* ---- Legacy aliases ---- */
+:root,
+:root[data-theme] {
+  --background: var(--bg);
+  --foreground: var(--fg);
+  --surface-primary: var(--surface);
+  --surface-secondary: var(--surface-2);
+  --surface-tertiary: var(--surface-3);
+  --border-subtle: var(--border);
+  --border-medium: var(--border-strong);
+  --accent-primary: var(--accent);
+  --accent-primary-hover: var(--accent-hover);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-surface-primary: var(--surface-primary);
-  --color-surface-secondary: var(--surface-secondary);
-  --color-surface-tertiary: var(--surface-tertiary);
-  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  /* Semantic color scale */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-glow: var(--border-glow);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-muted: var(--accent-muted);
+  --color-danger: var(--danger);
+  --color-danger-fg: var(--danger-fg);
+  --color-success: var(--success);
+
+  /* Legacy names */
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-surface-primary: var(--surface);
+  --color-surface-secondary: var(--surface-2);
+  --color-surface-tertiary: var(--surface-3);
+
+  /* Type families */
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), monospace;
+  
+  /* Radii */
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
 }
 
 html,
@@ -31,16 +135,18 @@ body {
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  background-color: var(--bg);
+  color: var(--fg);
   font-family: var(--font-sans);
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Modern minimalist custom scrollbars */
+/* Hairline scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -48,51 +154,86 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--border-strong);
   border-radius: 9999px;
+  transition: background 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--muted);
 }
 
-/* Glassmorphism utility */
+a:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---- Modern Glassmorphism & UI Utilities ---- */
 .glass-panel {
-  background: rgba(24, 24, 27, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
 }
 
 .glass-panel-subtle {
-  background: rgba(18, 18, 21, 0.6);
+  background: color-mix(in srgb, var(--surface) 30%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
 }
 
-/* Glow effects */
+.glass-pill {
+  background: color-mix(in srgb, var(--surface-2) 75%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-strong);
+  border-radius: 9999px;
+  box-shadow: var(--shadow-sm);
+}
+
 .glow-emerald {
-  box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 32px -8px var(--accent);
 }
 
-/* Subtle Shimmer animation for skeleton states */
+.rule {
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 .animate-shimmer {
   background: linear-gradient(
     90deg,
-    rgba(39, 39, 42, 0.4) 0%,
-    rgba(63, 63, 70, 0.8) 50%,
-    rgba(39, 39, 42, 0.4) 100%
+    color-mix(in srgb, var(--surface-2) 60%, transparent) 0%,
+    color-mix(in srgb, var(--surface-3) 90%, transparent) 50%,
+    color-mix(in srgb, var(--surface-2) 60%, transparent) 100%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.8s infinite linear;
+  animation: shimmer 2s infinite linear;
+}
+
+/* Micro-animations */
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-in-slide {
+  animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

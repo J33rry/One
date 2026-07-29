@@ -1,5 +1,6 @@
 import { apiClient } from './client';
 import { User } from './users';
+import { Message } from './messages';
 
 export interface ChatParticipant {
   id: string;
@@ -23,7 +24,7 @@ export interface Chat {
   isBlocked?: boolean;
   participants?: ChatParticipant[];
   // Sometimes returned by list queries
-  latestMessage?: any;
+  latestMessage?: Message;
 }
 
 export interface CreateChatPayload {

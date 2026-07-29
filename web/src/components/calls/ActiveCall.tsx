@@ -18,6 +18,7 @@ import {
   VideoOff,
   Loader2,
   ShieldCheck,
+  MoreVertical,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import clsx from "clsx";
@@ -42,7 +43,7 @@ export function ActiveCall({ token, serverUrl, callType }: ActiveCallProps) {
   }, [endCall]);
 
   return (
-    <div className="absolute inset-0 z-50 bg-zinc-950 flex flex-col select-none">
+    <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-3xl flex flex-col select-none animate-in fade-in duration-300">
       <LiveKitRoom
         token={token}
         serverUrl={serverUrl}
@@ -130,25 +131,27 @@ function CallContent({ callType }: { callType: "audio" | "video" }) {
 
   return (
     <>
-      {/* Top Header */}
-      <div className="h-16 px-6 bg-zinc-900/60 backdrop-blur-md border-b border-zinc-800/80 flex items-center justify-between z-10 shrink-0">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-emerald-400" />
-          <span className="text-xs font-semibold text-white tracking-wide">
-            End-to-End Encrypted Call
+      {/* Floating Header */}
+      <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-10 pointer-events-none">
+        <div className="glass-pill px-4 py-2 flex items-center gap-2 pointer-events-auto">
+          <ShieldCheck className="w-4 h-4 text-accent" />
+          <span className="text-[11px] font-bold tracking-widest uppercase text-fg">
+            Encrypted
           </span>
         </div>
-        <span className="text-xs font-mono text-zinc-400 bg-zinc-800/60 px-3 py-1 rounded-full border border-zinc-700/60">
-          {formatTime(elapsed)}
-        </span>
+        <div className="glass-pill px-4 py-2 pointer-events-auto">
+          <span className="text-[13px] font-mono text-fg font-bold tracking-wider">
+            {formatTime(elapsed)}
+          </span>
+        </div>
       </div>
 
       {/* Main content area */}
-      <div className="flex-1 flex items-center justify-center relative p-6 overflow-hidden">
+      <div className="flex-1 flex items-center justify-center relative p-4 md:p-12 overflow-hidden w-full h-full">
         {remoteVideoTracks.length > 0 ? (
           <div
             className={clsx(
-              "grid gap-4 w-full h-full max-w-6xl",
+              "grid gap-4 w-full h-full max-w-[1400px] mx-auto",
               remoteVideoTracks.length === 1
                 ? "grid-cols-1"
                 : remoteVideoTracks.length <= 4
@@ -157,49 +160,52 @@ function CallContent({ callType }: { callType: "audio" | "video" }) {
             )}
           >
             {remoteVideoTracks.map((trackRef) => (
-              <CallParticipantTile
-                key={trackRef.participant.sid}
-                trackRef={trackRef}
-                displayName={
-                  trackRef.participant.name || trackRef.participant.identity
-                }
-                isMuted={!trackRef.participant.isMicrophoneEnabled}
-              />
+              <div key={trackRef.participant.sid} className="rounded-3xl overflow-hidden shadow-2xl border border-border bg-surface-2 relative group">
+                <CallParticipantTile
+                  trackRef={trackRef}
+                  displayName={
+                    trackRef.participant.name || trackRef.participant.identity
+                  }
+                  isMuted={!trackRef.participant.isMicrophoneEnabled}
+                />
+              </div>
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-6">
+          <div className="flex flex-col items-center gap-8 animate-in zoom-in-95 duration-500">
             {remoteParticipants.length > 0 ? (
               <div className="flex -space-x-4">
-                {remoteParticipants.map((p) => (
+                {remoteParticipants.map((p, i) => (
                   <div
                     key={p.sid}
-                    className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-emerald-500/40 flex items-center justify-center shadow-2xl"
+                    className="w-32 h-32 rounded-full glass-panel border-2 border-accent/40 flex items-center justify-center shadow-[0_0_40px_rgba(16,185,129,0.15)] relative z-10"
+                    style={{ zIndex: 10 - i }}
                   >
-                    <span className="text-2xl font-bold text-emerald-400">
+                    <span className="text-4xl font-bold text-accent font-display">
                       {(p.name || p.identity)?.charAt(0).toUpperCase() || "?"}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="w-28 h-28 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center animate-pulse shadow-2xl">
-                <div className="w-20 h-20 rounded-full bg-zinc-900 flex items-center justify-center border border-zinc-800">
-                  <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+              <div className="relative">
+                <div className="absolute inset-0 bg-accent/20 rounded-full blur-3xl animate-pulse" />
+                <div className="w-32 h-32 rounded-full glass-panel border border-accent/30 flex items-center justify-center shadow-2xl relative z-10">
+                  <Loader2 className="w-10 h-10 text-accent animate-spin" />
                 </div>
               </div>
             )}
 
-            <div className="text-center space-y-1">
-              <h2 className="text-lg font-bold text-white">
+            <div className="text-center space-y-2">
+              <h2 className="text-3xl font-bold text-fg tracking-tight font-display">
                 {remoteParticipants.length > 0
                   ? callType === "audio"
                     ? "Audio Conversation"
                     : "Video Conversation"
-                  : "Connecting room..."}
+                  : "Connecting..."}
               </h2>
-              <p className="text-xs text-zinc-400 font-mono">
-                {formatTime(elapsed)}
+              <p className="text-sm text-accent font-mono tracking-widest uppercase font-bold">
+                {remoteParticipants.length > 0 ? formatTime(elapsed) : "Waiting for others"}
               </p>
             </div>
           </div>
@@ -207,7 +213,7 @@ function CallContent({ callType }: { callType: "audio" | "video" }) {
 
         {/* Local video PIP */}
         {isVideoOn && localVideoTracks.length > 0 && (
-          <div className="absolute bottom-6 right-6 shadow-2xl rounded-2xl overflow-hidden border-2 border-zinc-700/80">
+          <div className="absolute bottom-32 right-6 md:bottom-8 md:right-8 w-40 md:w-56 aspect-[3/4] shadow-[0_0_30px_rgba(0,0,0,0.5)] rounded-3xl overflow-hidden border border-border z-20 transition-all duration-300 hover:scale-105">
             <CallParticipantTile
               trackRef={localVideoTracks[0]}
               displayName="You"
@@ -217,41 +223,50 @@ function CallContent({ callType }: { callType: "audio" | "video" }) {
         )}
       </div>
 
-      {/* Control Bar */}
-      <div className="h-20 bg-zinc-900/90 backdrop-blur-xl border-t border-zinc-800/80 flex items-center justify-center gap-6 shrink-0">
-        <button
-          onClick={toggleMute}
-          className={clsx(
-            "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-md",
-            isMuted
-              ? "bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30"
-              : "bg-zinc-800 text-white hover:bg-zinc-700 border border-zinc-700"
-          )}
-          title={isMuted ? "Unmute Microphone" : "Mute Microphone"}
-        >
-          {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-        </button>
+      {/* Floating Control Bar */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30">
+        <div className="glass-pill px-6 py-4 flex items-center gap-4 md:gap-6 shadow-2xl border border-border">
+          <button
+            onClick={toggleMute}
+            className={clsx(
+              "w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-all duration-300",
+              isMuted
+                ? "bg-danger/20 text-danger border border-danger/40 hover:bg-danger/30"
+                : "bg-surface-3/50 text-fg hover:bg-surface-3 hover:text-white"
+            )}
+            title={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted ? <MicOff className="w-5 h-5 md:w-6 md:h-6" /> : <Mic className="w-5 h-5 md:w-6 md:h-6" />}
+          </button>
 
-        <button
-          onClick={toggleVideo}
-          className={clsx(
-            "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-md",
-            !isVideoOn
-              ? "bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30"
-              : "bg-zinc-800 text-white hover:bg-zinc-700 border border-zinc-700"
-          )}
-          title={isVideoOn ? "Turn off camera" : "Turn on camera"}
-        >
-          {!isVideoOn ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
-        </button>
+          <button
+            onClick={toggleVideo}
+            className={clsx(
+              "w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-all duration-300",
+              !isVideoOn
+                ? "bg-danger/20 text-danger border border-danger/40 hover:bg-danger/30"
+                : "bg-surface-3/50 text-fg hover:bg-surface-3 hover:text-white"
+            )}
+            title={isVideoOn ? "Turn off camera" : "Turn on camera"}
+          >
+            {!isVideoOn ? <VideoOff className="w-5 h-5 md:w-6 md:h-6" /> : <Video className="w-5 h-5 md:w-6 md:h-6" />}
+          </button>
 
-        <button
-          onClick={handleEndCall}
-          className="w-14 h-14 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center transition-all duration-200 shadow-lg shadow-red-600/30 hover:scale-105"
-          title="End Call"
-        >
-          <PhoneOff className="w-6 h-6" />
-        </button>
+          <button
+            onClick={handleEndCall}
+            className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-danger hover:bg-danger-fg hover:text-danger text-white flex items-center justify-center transition-all duration-300 shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:shadow-[0_0_30px_rgba(239,68,68,0.6)] hover:scale-105 mx-2"
+            title="End Call"
+          >
+            <PhoneOff className="w-7 h-7 md:w-8 md:h-8" />
+          </button>
+
+          <button
+            className="w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center bg-surface-3/50 text-fg hover:bg-surface-3 transition-all duration-300"
+            title="More Options"
+          >
+            <MoreVertical className="w-5 h-5 md:w-6 md:h-6" />
+          </button>
+        </div>
       </div>
     </>
   );

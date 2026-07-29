@@ -42,7 +42,7 @@ export default function RegisterPage() {
       queryClient.setQueryData(AUTH_QUERY_KEY, { user: data.user });
       router.push("/");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setErrorMsg(error.message || "Registration failed");
     },
   });
@@ -53,7 +53,7 @@ export default function RegisterPage() {
       queryClient.setQueryData(AUTH_QUERY_KEY, { user: data.user });
       router.push("/");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setErrorMsg(error.message || "Google Sign-In failed");
     },
   });
@@ -65,14 +65,14 @@ export default function RegisterPage() {
 
   return (
     <div className="space-y-6">
-      <div className="text-center space-y-1">
-        <h2 className="text-xl font-bold text-white tracking-tight">Create an account</h2>
-        <p className="text-xs text-zinc-400">Get started with secure end-to-end messaging.</p>
+      <div className="text-center space-y-1.5">
+        <h2 className="font-display text-2xl font-semibold text-fg tracking-tight">Create an account</h2>
+        <p className="text-xs text-muted">Get started with secure end-to-end messaging.</p>
       </div>
 
       {errorMsg && (
-        <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2.5">
-          <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+        <div className="p-3.5 rounded-lg bg-danger/10 border border-danger/25 text-danger text-xs flex items-center gap-2.5">
+          <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
@@ -127,10 +127,10 @@ export default function RegisterPage() {
 
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-zinc-800" />
+          <div className="w-full border-t border-border" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase font-mono">
-          <span className="px-3 bg-zinc-900 text-zinc-500">Or continue with</span>
+        <div className="relative flex justify-center text-[10px] tracking-[0.2em] uppercase font-mono">
+          <span className="px-3 bg-surface text-faint">Or continue with</span>
         </div>
       </div>
 
@@ -149,11 +149,11 @@ export default function RegisterPage() {
         />
       </div>
 
-      <div className="text-center text-xs text-zinc-400 pt-2">
+      <div className="text-center text-xs text-muted pt-2">
         Already have an account?{" "}
         <Link
           href="/login"
-          className="font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+          className="font-semibold text-accent hover:text-accent-hover transition-colors"
         >
           Sign in
         </Link>

@@ -63,8 +63,8 @@ export const useCallStore = create<CallStore>((set, get) => ({
         livekitToken: token,
         livekitUrl: livekitUrl.replace(/^http/, 'ws'),
       });
-    } catch (err: any) {
-      set({ callState: 'idle', error: err.message || 'Failed to start call' });
+    } catch (err) {
+      set({ callState: 'idle', error: err instanceof Error ? err.message : 'Failed to start call' });
     }
   },
 
@@ -90,8 +90,8 @@ export const useCallStore = create<CallStore>((set, get) => ({
         callState: 'connecting',
         incomingCall: null,
       });
-    } catch (err: any) {
-      set({ callState: 'idle', incomingCall: null, error: err.message || 'Failed to join call' });
+    } catch (err) {
+      set({ callState: 'idle', incomingCall: null, error: err instanceof Error ? err.message : 'Failed to join call' });
     }
   },
 
@@ -145,7 +145,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
     }
   },
 
-  handleCallRejected: (callId, userId) => {
+  handleCallRejected: (callId) => {
     const { activeCall, endCall } = get();
     // In a 1:1 context, if our active call is rejected, we end it entirely.
     if (activeCall?.id === callId) {

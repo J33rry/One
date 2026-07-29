@@ -69,7 +69,7 @@ export default function ContactsPage() {
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
       toast("Contact request sent!", "success");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast(error.message || "Failed to send contact request", "error");
     },
   });
@@ -183,7 +183,7 @@ export default function ContactsPage() {
                             <span className="text-emerald-400 font-medium text-[11px]">Online</span>
                           ) : (
                             <span className="text-zinc-400 text-[11px]">
-                              {formatLastSeen(getLastSeen(user.id) || (user as any).lastSeenAt)}
+                              {formatLastSeen(getLastSeen(user.id) || user.lastSeenAt)}
                             </span>
                           )}
                         </div>
@@ -215,7 +215,7 @@ export default function ContactsPage() {
               })}
               {searchResults.length === 0 && searchQuery && !isSearching && (
                 <div className="p-8 text-center text-xs text-zinc-500">
-                  No users found matching "{searchQuery}"
+                  No users found matching &quot;{searchQuery}&quot;
                 </div>
               )}
             </ul>

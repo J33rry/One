@@ -8,6 +8,8 @@ export interface User {
   bio: string | null;
   email: string;
   createdAt: string;
+  // Sometimes returned by presence-enriched queries
+  lastSeenAt?: string;
 }
 
 export interface UserProfileUpdate {

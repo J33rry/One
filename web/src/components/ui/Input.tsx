@@ -18,13 +18,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full space-y-1.5">
         {label && (
-          <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">
+          <label htmlFor={inputId} className="block font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-muted">
             {label}
           </label>
         )}
         <div className="relative flex items-center">
           {leftIcon && (
-            <div className="absolute left-3.5 text-zinc-500 pointer-events-none flex items-center justify-center">
+            <div className="absolute left-3.5 text-faint pointer-events-none flex items-center justify-center">
               {leftIcon}
             </div>
           )}
@@ -32,22 +32,22 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             ref={ref}
             className={clsx(
-              "w-full bg-zinc-900/90 border border-zinc-800 text-zinc-100 placeholder-zinc-500 text-sm rounded-xl px-3.5 py-2.5 transition-all duration-150 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/30",
+              "w-full bg-surface-2 border border-border text-fg placeholder-faint text-sm rounded-lg px-3.5 py-2.5 transition-[border-color,box-shadow] duration-150 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30",
               leftIcon && "pl-10",
               rightIcon && "pr-10",
-              error && "border-red-500/60 focus:border-red-500 focus:ring-red-500/20",
+              error && "border-danger/60 focus:border-danger focus:ring-danger/20",
               className
             )}
             {...props}
           />
           {rightIcon && (
-            <div className="absolute right-3.5 text-zinc-500 flex items-center justify-center">
+            <div className="absolute right-3.5 text-faint flex items-center justify-center">
               {rightIcon}
             </div>
           )}
         </div>
-        {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
-        {helperText && !error && <p className="text-xs text-zinc-500 mt-1">{helperText}</p>}
+        {error && <p className="text-xs text-danger mt-1">{error}</p>}
+        {helperText && !error && <p className="text-xs text-faint mt-1">{helperText}</p>}
       </div>
     );
   }
@@ -68,7 +68,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="w-full space-y-1.5">
         {label && (
-          <label htmlFor={textareaId} className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">
+          <label htmlFor={textareaId} className="block font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-muted">
             {label}
           </label>
         )}
@@ -76,14 +76,14 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           id={textareaId}
           ref={ref}
           className={clsx(
-            "w-full bg-zinc-900/90 border border-zinc-800 text-zinc-100 placeholder-zinc-500 text-sm rounded-xl px-3.5 py-2.5 transition-all duration-150 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/30 resize-none",
-            error && "border-red-500/60 focus:border-red-500 focus:ring-red-500/20",
+            "w-full bg-surface-2 border border-border text-fg placeholder-faint text-sm rounded-lg px-3.5 py-2.5 transition-[border-color,box-shadow] duration-150 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 resize-none",
+            error && "border-danger/60 focus:border-danger focus:ring-danger/20",
             className
           )}
           {...props}
         />
-        {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
-        {helperText && !error && <p className="text-xs text-zinc-500 mt-1">{helperText}</p>}
+        {error && <p className="text-xs text-danger mt-1">{error}</p>}
+        {helperText && !error && <p className="text-xs text-faint mt-1">{helperText}</p>}
       </div>
     );
   }

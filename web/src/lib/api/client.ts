@@ -38,7 +38,7 @@ export async function apiClient<T>(
     let response: Response;
     try {
         response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-    } catch (error) {
+    } catch {
         throw new ApiError(
             "Network Error: Could not connect to the server.",
             0,
@@ -53,7 +53,7 @@ export async function apiClient<T>(
     let data;
     try {
         data = await response.json();
-    } catch (err) {
+    } catch {
         // Some routes might return plain text or empty bodies despite not being 204
         data = {};
     }

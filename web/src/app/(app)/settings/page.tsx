@@ -40,7 +40,7 @@ export default function SettingsPage() {
       queryClient.setQueryData(AUTH_QUERY_KEY, { user: data.user });
       toast("Profile updated successfully!", "success");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast(error.message || "Failed to update profile", "error");
     },
   });
@@ -63,8 +63,8 @@ export default function SettingsPage() {
       const media = await mediaApi.upload(file, () => {});
       setAvatarUrl(media.storageId);
       toast("Avatar uploaded! Remember to save changes.", "info");
-    } catch (err: any) {
-      toast(err.message || "Failed to upload avatar", "error");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to upload avatar", "error");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

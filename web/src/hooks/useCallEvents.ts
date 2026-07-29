@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { useSocketEvent } from "./useSocket";
 import { useCallStore, IncomingCallPayload } from "./useCall";
 

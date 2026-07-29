@@ -45,7 +45,7 @@ function ResetPasswordForm() {
     onSuccess: () => {
       setSuccess(true);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setErrorMsg(error.message || "Failed to reset password");
     },
   });
@@ -58,11 +58,11 @@ function ResetPasswordForm() {
   if (!token) {
     return (
       <div className="text-center space-y-4 py-4">
-        <AlertCircle className="w-8 h-8 text-red-400 mx-auto" />
-        <p className="text-sm text-red-400 font-medium">
+        <AlertCircle className="w-8 h-8 text-danger mx-auto" />
+        <p className="text-sm text-danger font-medium">
           Invalid or missing reset token.
         </p>
-        <p className="text-xs text-zinc-400">
+        <p className="text-xs text-muted">
           Please request a new password reset link from the login page.
         </p>
         <Link href="/forgot-password">
@@ -77,11 +77,11 @@ function ResetPasswordForm() {
   if (success) {
     return (
       <div className="text-center space-y-4 py-2">
-        <div className="w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto">
+        <div className="w-12 h-12 rounded-full bg-success/15 text-success border border-success/30 flex items-center justify-center mx-auto">
           <CheckCircle2 className="w-6 h-6" />
         </div>
-        <h2 className="text-lg font-bold text-white">Password reset successful!</h2>
-        <p className="text-xs text-zinc-400">
+        <h2 className="font-display text-xl font-semibold text-fg">Password reset successful!</h2>
+        <p className="text-xs text-muted">
           Your password has been updated. You can now sign in with your new password.
         </p>
         <div className="pt-2">
@@ -97,14 +97,14 @@ function ResetPasswordForm() {
 
   return (
     <div className="space-y-6">
-      <div className="text-center space-y-1">
-        <h2 className="text-xl font-bold text-white tracking-tight">Choose a new password</h2>
-        <p className="text-xs text-zinc-400">Enter your new secure password below.</p>
+      <div className="text-center space-y-1.5">
+        <h2 className="font-display text-2xl font-semibold text-fg tracking-tight">Choose a new password</h2>
+        <p className="text-xs text-muted">Enter your new secure password below.</p>
       </div>
 
       {errorMsg && (
-        <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2.5">
-          <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+        <div className="p-3.5 rounded-lg bg-danger/10 border border-danger/25 text-danger text-xs flex items-center gap-2.5">
+          <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
@@ -138,7 +138,7 @@ export default function ResetPasswordPage() {
     <Suspense
       fallback={
         <div className="flex justify-center p-8">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+          <Loader2 className="w-8 h-8 animate-spin text-accent" />
         </div>
       }
     >

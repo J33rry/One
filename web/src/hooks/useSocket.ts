@@ -21,8 +21,11 @@ export function useSocket() {
   }, [isAuthenticated]);
 }
 
-export function useSocketEvent(event: string, callback: (payload: any) => void) {
+export function useSocketEvent<T = unknown>(
+  event: string,
+  callback: (payload: T) => void,
+) {
   useEffect(() => {
-    return socketClient.on(event, callback);
+    return socketClient.on(event, callback as (payload: unknown) => void);
   }, [event, callback]);
 }

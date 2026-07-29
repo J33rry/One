@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { socketClient } from '@/lib/ws/socket';
 import { useSocketEvent } from './useSocket';
 
 export function useTyping(chatId: string) {
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
-  let typingTimeout: NodeJS.Timeout;
+  const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useSocketEvent('typing:start', (payload: { chatId: string, userId: string }) => {
     if (payload.chatId === chatId) {
@@ -28,8 +28,8 @@ export function useTyping(chatId: string) {
     socketClient.send('typing:start', { chatId });
     
     // Auto stop typing after 3s of inactivity
-    clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => {
+    clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
       socketClient.send('typing:stop', { chatId });
     }, 3000);
   }, [chatId]);
@@ -37,7 +37,7 @@ export function useTyping(chatId: string) {
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      clearTimeout(typingTimeout);
+      clearTimeout(typingTimeoutRef.current);
     };
   }, []);
 

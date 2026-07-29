@@ -11,7 +11,6 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Avatar } from "@/components/ui/Avatar";
-import { Badge } from "@/components/ui/Badge";
 import { usePresence } from "@/hooks/usePresence";
 import { useToast } from "@/components/ui/Toast";
 

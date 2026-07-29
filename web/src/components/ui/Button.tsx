@@ -28,26 +28,26 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      "inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] select-none cursor-pointer";
+      "inline-flex items-center justify-center font-medium rounded-lg transition-[background-color,color,border-color,transform,box-shadow] duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] select-none cursor-pointer";
 
     const variants = {
       primary:
-        "bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 border border-emerald-500/30",
+        "bg-accent hover:bg-accent-hover text-accent-fg shadow-sm border border-accent/20",
       secondary:
-        "bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700/60 shadow-sm",
+        "bg-surface-2 hover:bg-surface-3 text-fg border border-border shadow-sm",
       ghost:
-        "bg-transparent hover:bg-zinc-800/60 text-zinc-400 hover:text-zinc-100",
+        "bg-transparent hover:bg-surface-2 text-muted hover:text-fg",
       danger:
-        "bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30",
+        "bg-danger/15 hover:bg-danger/25 text-danger border border-danger/30",
       outline:
-        "bg-transparent hover:bg-zinc-800/40 text-zinc-200 border border-zinc-700/80",
+        "bg-transparent hover:bg-surface-2 text-fg border border-border-strong",
     };
 
     const sizes = {
       sm: "text-xs px-3 py-1.5 gap-1.5",
       md: "text-sm px-4 py-2 gap-2",
       lg: "text-base px-5 py-2.5 gap-2.5",
-      icon: "p-2 rounded-lg text-zinc-400 hover:text-white",
+      icon: "p-2 rounded-lg text-muted hover:text-fg hover:bg-surface-2",
     };
 
     return (

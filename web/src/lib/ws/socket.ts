@@ -1,4 +1,4 @@
-type WSCallback = (payload: any) => void;
+type WSCallback = (payload: unknown) => void;
 
 class SocketClient {
     private ws: WebSocket | null = null;
@@ -80,7 +80,7 @@ class SocketClient {
         }
     }
 
-    public send(type: string, payload: any = {}) {
+    public send(type: string, payload: unknown = {}) {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify({ type, payload }));
         } else {
@@ -100,7 +100,7 @@ class SocketClient {
         this.listeners.get(event)?.delete(callback);
     }
 
-    private emit(event: string, payload: any) {
+    private emit(event: string, payload: unknown) {
         this.listeners.get(event)?.forEach((cb) => cb(payload));
     }
 }

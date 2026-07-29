@@ -34,7 +34,7 @@ export const mediaApi = {
     // Using 'auto' resource type supports images, videos, raw files, etc.
     const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
     
-    const cloudData = await new Promise<any>((resolve, reject) => {
+    const cloudData = await new Promise<{ secure_url?: string; [key: string]: unknown }>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', uploadUrl);
 
@@ -50,14 +50,14 @@ export const mediaApi = {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             resolve(JSON.parse(xhr.responseText));
-          } catch (e) {
-            resolve(xhr.responseText);
+          } catch {
+            resolve({ secure_url: xhr.responseText });
           }
         } else {
           try {
             const err = JSON.parse(xhr.responseText);
             reject(new Error(err.error?.message || 'Failed to upload to Cloudinary'));
-          } catch (e) {
+          } catch {
             reject(new Error(`Failed to upload: ${xhr.statusText}`));
           }
         }

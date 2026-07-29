@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { chatsApi } from "@/lib/api/chats";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, Info, Phone, Video, ArrowLeft, Settings, Shield } from "lucide-react";
+import { Loader2, Info, Phone, Video, ArrowLeft, Settings, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { formatLastSeen } from "@/lib/utils/presence";
@@ -15,6 +15,7 @@ import { ChatSettingsModal } from "./ChatSettingsModal";
 import { Avatar } from "@/components/ui/Avatar";
 import { usePresence } from "@/hooks/usePresence";
 import { Badge } from "@/components/ui/Badge";
+import clsx from "clsx";
 
 interface ChatMainProps {
   chatId: string;
@@ -37,15 +38,15 @@ export function ChatMain({ chatId }: ChatMainProps) {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-zinc-950">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+      <div className="flex-1 flex items-center justify-center bg-transparent">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
       </div>
     );
   }
 
   if (!chat) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-zinc-950 text-zinc-400 text-sm">
+      <div className="flex-1 flex items-center justify-center bg-transparent text-muted text-sm">
         Conversation not found
       </div>
     );
@@ -60,10 +61,10 @@ export function ChatMain({ chatId }: ChatMainProps) {
     : otherParticipant?.displayName || "Unknown User";
 
   const otherUserOnline = !isGroup && otherParticipant ? isOnline(otherParticipant.id) : false;
-  const otherUserLastSeen = !isGroup && otherParticipant ? (getLastSeen(otherParticipant.id) || (otherParticipant as any)?.lastSeenAt) : null;
+  const otherUserLastSeen = !isGroup && otherParticipant ? (getLastSeen(otherParticipant.id) || otherParticipant.lastSeenAt) : null;
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-zinc-950 relative overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-transparent relative overflow-hidden">
       {isInCall && livekitToken && livekitUrl && (
         <ActiveCall
           token={livekitToken}
@@ -72,15 +73,15 @@ export function ChatMain({ chatId }: ChatMainProps) {
         />
       )}
 
-      {/* Conversation Top Header Bar */}
-      <header className="h-16 flex items-center justify-between px-4 border-b border-zinc-800/80 bg-zinc-900/60 backdrop-blur-lg shrink-0 z-20">
+      {/* Conversation Top Header Bar - Glassmorphic */}
+      <header className="h-[72px] flex items-center justify-between px-6 border-b border-border glass-panel-subtle shrink-0 z-20">
         <div
-          className="flex items-center gap-3 cursor-pointer hover:opacity-90 transition-opacity"
+          className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity group"
           onClick={() => setShowSettings(true)}
         >
           <Link
             href="/"
-            className="md:hidden p-2 -ml-2 text-zinc-400 hover:text-white"
+            className="md:hidden p-2 -ml-2 text-muted hover:text-fg transition-colors"
             onClick={(e) => e.stopPropagation()}
           >
             <ArrowLeft className="w-5 h-5" />
@@ -93,60 +94,63 @@ export function ChatMain({ chatId }: ChatMainProps) {
             isGroup={isGroup}
             showPresence={!isGroup}
             isOnline={otherUserOnline}
+            className="group-hover:ring-2 group-hover:ring-accent/30 transition-all shadow-md"
           />
 
           <div>
-            <h2 className="text-sm font-bold text-white leading-tight flex items-center gap-2">
+            <h2 className="text-base font-bold text-fg leading-tight flex items-center gap-2 tracking-tight">
               {title}
             </h2>
-            <p className="text-[11px] text-zinc-400 font-medium">
+            <p className="text-[11px] font-medium mt-0.5">
               {isGroup ? (
-                <span>{chat.participants?.length || 0} members</span>
+                <span className="text-muted">{chat.participants?.length || 0} members</span>
               ) : otherUserOnline ? (
-                <span className="text-emerald-400 font-medium flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-accent font-medium flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shadow-[0_0_8px_var(--accent)]" />
                   Online
                 </span>
               ) : (
-                <span>{formatLastSeen(otherUserLastSeen)}</span>
+                <span className="text-muted">{formatLastSeen(otherUserLastSeen)}</span>
               )}
             </p>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-1 sm:gap-1.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => startCall(chatId, "audio")}
             disabled={callState !== "idle" || chat.isBlocked}
-            className="p-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-2.5 rounded-xl text-muted hover:text-accent hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
             title="Start Audio Call"
           >
-            <Phone className="w-4 h-4" />
+            <Phone className="w-5 h-5" />
           </button>
           <button
             onClick={() => startCall(chatId, "video")}
             disabled={callState !== "idle" || chat.isBlocked}
-            className="p-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-2.5 rounded-xl text-muted hover:text-accent hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
             title="Start Video Call"
           >
-            <Video className="w-4 h-4" />
+            <Video className="w-5 h-5" />
           </button>
+          <div className="w-px h-6 bg-border mx-1" />
           <button
             onClick={() => setShowSettings(true)}
-            className="p-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800/80 transition-colors"
+            className="p-2.5 rounded-xl text-muted hover:text-fg hover:bg-surface-3/50 transition-all duration-300"
             title="Chat Settings"
           >
-            <Settings className="w-4 h-4" />
+            <Settings className="w-5 h-5" />
           </button>
           <button
             onClick={() => setShowInfo(!showInfo)}
-            className={`p-2.5 rounded-xl transition-colors ${
-              showInfo ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20" : "text-zinc-400 hover:text-white hover:bg-zinc-800/80"
-            }`}
+            className={clsx(
+              "p-2.5 rounded-xl transition-all duration-300",
+              showInfo ? "text-accent bg-accent/10 border border-accent/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]" : "text-muted hover:text-fg hover:bg-surface-3/50"
+            )}
             title="Chat Info Drawer"
           >
-            <Info className="w-4 h-4" />
+            <Info className="w-5 h-5" />
           </button>
         </div>
       </header>
@@ -156,29 +160,30 @@ export function ChatMain({ chatId }: ChatMainProps) {
 
       {/* Composer Area */}
       {chat.isBlocked ? (
-        <div className="p-4 border-t border-zinc-800/80 bg-zinc-950 shrink-0 flex items-center justify-center">
-          <p className="text-zinc-500 text-xs italic">
+        <div className="p-4 border-t border-border bg-surface-2/30 shrink-0 flex items-center justify-center backdrop-blur-md">
+          <div className="flex items-center gap-2 text-muted text-xs italic bg-surface-3/30 px-4 py-2 rounded-full border border-border">
+            <ShieldCheck className="w-4 h-4 text-faint" />
             You cannot reply to this conversation.
-          </p>
+          </div>
         </div>
       ) : (
         <MessageComposer chatId={chatId} />
       )}
 
-      {/* Info Slide-Over Panel */}
+      {/* Info Slide-Over Panel - Glassmorphic */}
       {showInfo && (
-        <div className="absolute inset-y-0 right-0 w-full sm:w-80 bg-zinc-900/95 backdrop-blur-xl border-l border-zinc-800/80 flex flex-col z-30 shadow-2xl animate-in slide-in-from-right duration-200">
-          <div className="h-16 flex items-center justify-between px-5 border-b border-zinc-800/80 shrink-0">
-            <h3 className="text-sm font-bold text-white">Chat Info</h3>
+        <div className="absolute inset-y-0 right-0 w-full sm:w-80 glass-panel border-l border-border flex flex-col z-30 shadow-2xl animate-in slide-in-from-right duration-300">
+          <div className="h-[72px] flex items-center justify-between px-6 border-b border-border shrink-0">
+            <h3 className="text-base font-bold text-fg tracking-tight">Chat Info</h3>
             <button
               onClick={() => setShowInfo(false)}
-              className="text-xs text-zinc-400 hover:text-white px-2.5 py-1 rounded-lg bg-zinc-800/60"
+              className="text-xs text-muted hover:text-fg px-3 py-1.5 rounded-lg bg-surface-3/40 hover:bg-surface-3 transition-colors"
             >
               Close
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-5 space-y-6">
+          <div className="flex-1 overflow-y-auto p-6 space-y-8">
             <div className="text-center">
               <Avatar
                 src={isGroup ? chat.avatarUrl : otherParticipant?.avatarUrl}
@@ -187,21 +192,22 @@ export function ChatMain({ chatId }: ChatMainProps) {
                 isGroup={isGroup}
                 showPresence={!isGroup}
                 isOnline={otherUserOnline}
-                className="mx-auto mb-3"
+                className="mx-auto mb-4 shadow-xl ring-4 ring-surface-2"
               />
-              <h2 className="text-base font-bold text-white">{title}</h2>
+              <h2 className="text-xl font-bold text-fg tracking-tight">{title}</h2>
               {chat.description && (
-                <p className="text-xs text-zinc-400 mt-2 leading-relaxed bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/60">
+                <p className="text-xs text-muted mt-3 leading-relaxed bg-black/20 p-4 rounded-2xl border border-border shadow-inner">
                   {chat.description}
                 </p>
               )}
             </div>
 
             <div>
-              <h4 className="text-[11px] font-mono font-semibold text-zinc-500 uppercase tracking-wider mb-3">
-                Participants ({chat.participants?.length || 0})
+              <h4 className="text-[10px] font-mono font-bold text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
+                Participants 
+                <span className="bg-surface-3/50 text-fg px-2 py-0.5 rounded-full">{chat.participants?.length || 0}</span>
               </h4>
-              <ul className="space-y-2.5">
+              <ul className="space-y-2">
                 {chat.participants?.map((p) => {
                   const pUser = p.user;
                   const isUserOnline = isOnline(p.userId);
@@ -209,7 +215,7 @@ export function ChatMain({ chatId }: ChatMainProps) {
                   return (
                     <li
                       key={p.id}
-                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-zinc-800/50 transition-colors"
+                      className="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-surface-3/30 transition-colors border border-transparent hover:border-border"
                     >
                       <Avatar
                         src={pUser?.avatarUrl}
@@ -219,15 +225,15 @@ export function ChatMain({ chatId }: ChatMainProps) {
                         isOnline={isUserOnline}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-white truncate">
+                        <p className="text-sm font-semibold text-fg truncate">
                           {p.userId === currentUser?.id ? "You" : pUser?.displayName}
                         </p>
-                        <p className="text-[11px] text-zinc-500 truncate">
+                        <p className="text-[11px] text-muted truncate">
                           @{pUser?.username}
                         </p>
                       </div>
                       {p.role === "admin" && (
-                        <Badge variant="emerald">Admin</Badge>
+                        <Badge className="bg-accent/10 text-accent border-accent/20">Admin</Badge>
                       )}
                     </li>
                   );

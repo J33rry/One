@@ -64,7 +64,7 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
       resetForm();
       router.push(`/chats/${data.chat.id}`);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setErrorMsg(error.message || "Failed to create chat");
     },
   });

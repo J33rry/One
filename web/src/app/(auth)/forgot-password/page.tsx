@@ -34,7 +34,7 @@ export default function ForgotPasswordPage() {
     onSuccess: () => {
       setSuccess(true);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setErrorMsg(error.message || "Failed to send reset email");
     },
   });
@@ -46,18 +46,18 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="space-y-6">
-      <div className="text-center space-y-1">
-        <h2 className="text-xl font-bold text-white tracking-tight">Reset your password</h2>
-        <p className="text-xs text-zinc-400">Enter your email and we'll send a password recovery link.</p>
+      <div className="text-center space-y-1.5">
+        <h2 className="font-display text-2xl font-semibold text-fg tracking-tight">Reset your password</h2>
+        <p className="text-xs text-muted">Enter your email and we&apos;ll send a password recovery link.</p>
       </div>
 
       {success ? (
         <div className="text-center space-y-4 py-2">
-          <div className="w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto">
+          <div className="w-12 h-12 rounded-full bg-success/15 text-success border border-success/30 flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-6 h-6" />
           </div>
-          <p className="text-xs text-zinc-300 leading-relaxed">
-            If that email exists in our system, we've sent a password reset link to it. Please check your inbox.
+          <p className="text-xs text-muted leading-relaxed">
+            If that email exists in our system, we&apos;ve sent a password reset link to it. Please check your inbox.
           </p>
           <div className="pt-2">
             <Link href="/login">
@@ -70,8 +70,8 @@ export default function ForgotPasswordPage() {
       ) : (
         <>
           {errorMsg && (
-            <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+            <div className="p-3.5 rounded-lg bg-danger/10 border border-danger/25 text-danger text-xs flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
@@ -97,11 +97,11 @@ export default function ForgotPasswordPage() {
             </Button>
           </form>
 
-          <div className="text-center text-xs text-zinc-400 pt-2">
+          <div className="text-center text-xs text-muted pt-2">
             Remember your password?{" "}
             <Link
               href="/login"
-              className="font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+              className="font-semibold text-accent hover:text-accent-hover transition-colors"
             >
               Sign in
             </Link>

@@ -3,13 +3,13 @@ import { User } from './users';
 
 export const authApi = {
   // Registration
-  register: (data: any) => apiClient<{ user: User }>('/auth/register', {
+  register: (data: Record<string, unknown>) => apiClient<{ user: User }>('/auth/register', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
 
   // Login (Password step)
-  loginPassword: (data: any) => apiClient<{ user: User }>('/auth/login/password', {
+  loginPassword: (data: Record<string, unknown>) => apiClient<{ user: User }>('/auth/login/password', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
@@ -21,7 +21,7 @@ export const authApi = {
   }),
 
   // Password reset & change
-  changePassword: (data: any) => apiClient<void>('/auth/password/change', {
+  changePassword: (data: Record<string, unknown>) => apiClient<void>('/auth/password/change', {
     method: 'POST',
     body: JSON.stringify(data),
   }),

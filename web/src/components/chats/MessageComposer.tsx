@@ -4,11 +4,11 @@ import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { messagesApi } from "@/lib/api/messages";
 import { mediaApi } from "@/lib/api/media";
-import { Paperclip, Send, Loader2, X, File as FileIcon, Check, Smile } from "lucide-react";
+import { Paperclip, Send, Loader2, X, File as FileIcon, Check, Smile, ArrowUp } from "lucide-react";
 import { useTyping } from "@/hooks/useTyping";
 import { useMessageActions } from "@/hooks/useMessageActions";
 import clsx from "clsx";
-import EmojiPicker, { Theme } from "emoji-picker-react";
+import EmojiPicker, { Theme, EmojiClickData } from "emoji-picker-react";
 
 interface MessageComposerProps {
   chatId: string;
@@ -196,14 +196,14 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
     sendTypingStart();
   };
 
-  const handleEmojiSelect = (emojiData: any) => {
+  const handleEmojiSelect = (emojiData: EmojiClickData) => {
     setContent((prev) => prev + emojiData.emoji);
     if (textareaRef.current) textareaRef.current.focus();
   };
 
   return (
     <div
-      className="p-3 border-t border-zinc-800/80 bg-zinc-950 shrink-0 flex flex-col relative"
+      className="p-4 bg-transparent shrink-0 flex flex-col relative z-20"
       ref={containerRef}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -211,15 +211,15 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
     >
       {/* Drag & Drop Overlay */}
       {isDragging && (
-        <div className="absolute inset-0 z-40 bg-emerald-950/80 backdrop-blur-md border-2 border-dashed border-emerald-500 rounded-2xl flex flex-col items-center justify-center text-emerald-300 pointer-events-none">
-          <Paperclip className="w-8 h-8 mb-2 animate-bounce" />
-          <p className="text-sm font-bold">Drop file to attach</p>
+        <div className="absolute inset-4 z-40 glass-panel border-2 border-dashed border-accent rounded-3xl flex flex-col items-center justify-center text-accent pointer-events-none shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+          <Paperclip className="w-10 h-10 mb-3 animate-bounce" />
+          <p className="text-sm font-bold tracking-wide">Drop file to attach</p>
         </div>
       )}
 
       {/* Emoji Picker Floating Popover */}
       {showEmojiPicker && (
-        <div className="absolute bottom-full mb-3 left-4 z-50 shadow-2xl rounded-2xl overflow-hidden border border-zinc-800">
+        <div className="absolute bottom-full mb-4 left-4 z-50 shadow-2xl rounded-3xl overflow-hidden border border-border glass-panel">
           <EmojiPicker
             theme={Theme.DARK}
             onEmojiClick={handleEmojiSelect}
@@ -232,29 +232,29 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
       <form
         onSubmit={handleSubmit}
         className={clsx(
-          "flex flex-col bg-zinc-900/90 border transition-all duration-200 shadow-lg",
+          "flex flex-col glass-pill transition-all duration-300 shadow-lg mx-auto w-full max-w-4xl relative overflow-visible",
           editingMessage
-            ? "border-emerald-500/60 rounded-2xl"
+            ? "ring-2 ring-accent/50 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
             : replyingToMessage
-            ? "border-blue-500/60 rounded-2xl"
-            : "border-zinc-800 focus-within:border-emerald-500/60 rounded-2xl"
+            ? "ring-2 ring-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.2)]"
+            : "ring-1 ring-border focus-within:ring-2 focus-within:ring-accent/50 focus-within:shadow-[0_0_20px_rgba(16,185,129,0.1)]"
         )}
       >
         {/* Reply Active Banner */}
         {replyingToMessage && (
-          <div className="flex items-center justify-between px-4 py-2 bg-blue-950/30 border-b border-zinc-800 rounded-t-2xl">
+          <div className="flex items-center justify-between px-6 py-2.5 bg-blue-500/10 border-b border-blue-500/20 rounded-t-[9999px]">
             <div className="flex flex-col min-w-0 pr-4">
-              <span className="text-[11px] font-semibold text-blue-400">
+              <span className="text-[10px] font-bold tracking-widest uppercase text-blue-400">
                 Replying to {replyingToMessage.sender?.displayName || "User"}
               </span>
-              <span className="text-xs text-zinc-300 truncate">
+              <span className="text-xs text-muted truncate mt-0.5">
                 {replyingToMessage.content || "Media attachment"}
               </span>
             </div>
             <button
               type="button"
               onClick={() => clearActions()}
-              className="p-1 bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors shrink-0"
+              className="p-1.5 bg-blue-500/20 rounded-full text-blue-400 hover:text-white hover:bg-blue-500/40 transition-colors shrink-0"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -263,9 +263,9 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
 
         {/* Edit Active Banner */}
         {editingMessage && (
-          <div className="flex items-center justify-between px-4 py-2 bg-emerald-950/30 border-b border-zinc-800 rounded-t-2xl">
+          <div className="flex items-center justify-between px-6 py-2.5 bg-accent/10 border-b border-accent/20 rounded-t-[9999px]">
             <div className="flex flex-col min-w-0">
-              <span className="text-[11px] font-semibold text-emerald-400">
+              <span className="text-[10px] font-bold tracking-widest uppercase text-accent">
                 Editing Message
               </span>
             </div>
@@ -275,7 +275,7 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
                 clearActions();
                 setContent("");
               }}
-              className="p-1 bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors shrink-0"
+              className="p-1.5 bg-accent/20 rounded-full text-accent hover:text-white hover:bg-accent/40 transition-colors shrink-0"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -284,12 +284,12 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
 
         {/* Selected File Preview Box */}
         {selectedFile && !editingMessage && (
-          <div className="relative self-start ml-4 mt-3 mb-1 rounded-xl overflow-hidden bg-zinc-950 border border-zinc-800 inline-flex items-center justify-center">
+          <div className="relative self-start ml-6 mt-3 mb-1 rounded-2xl overflow-hidden bg-black/40 border border-border inline-flex items-center justify-center shadow-inner">
             {previewUrl ? (
               <img src={previewUrl} alt="Preview" className="w-24 h-24 object-cover" />
             ) : (
-              <div className="p-4 flex flex-col items-center justify-center w-24 h-24 text-zinc-400">
-                <FileIcon className="w-7 h-7 mb-1 text-emerald-400" />
+              <div className="p-4 flex flex-col items-center justify-center w-24 h-24 text-muted">
+                <FileIcon className="w-7 h-7 mb-2 text-accent" />
                 <span className="text-[10px] max-w-[80px] truncate text-center font-mono">
                   {selectedFile.name}
                 </span>
@@ -300,23 +300,23 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
               <button
                 type="button"
                 onClick={clearFile}
-                className="absolute top-1 right-1 p-1 bg-black/70 hover:bg-red-500 rounded-full text-white transition-colors"
+                className="absolute top-2 right-2 p-1.5 bg-black/60 backdrop-blur-md hover:bg-danger rounded-full text-white transition-all shadow-md"
                 title="Remove file"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
 
             {isUploading && (
-              <div className="absolute inset-0 bg-black/75 flex flex-col items-center justify-center gap-1.5 text-white">
-                <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
-                <span className="text-[10px] font-bold font-mono">{uploadProgress}%</span>
+              <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2 text-white">
+                <Loader2 className="w-6 h-6 animate-spin text-accent" />
+                <span className="text-[10px] font-bold font-mono text-accent">{uploadProgress}%</span>
               </div>
             )}
           </div>
         )}
 
-        <div className="flex items-end gap-2 p-2">
+        <div className="flex items-end gap-2 p-2 px-3">
           {!editingMessage && (
             <>
               <input
@@ -330,10 +330,10 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="p-2 text-zinc-400 hover:text-emerald-400 transition-colors rounded-xl hover:bg-zinc-800/60 disabled:opacity-50"
+                className="p-3 text-muted hover:text-accent transition-colors rounded-full hover:bg-surface-3/30 disabled:opacity-50"
                 title="Attach file"
               >
-                <Paperclip className="w-4 h-4" />
+                <Paperclip className="w-5 h-5" />
               </button>
             </>
           )}
@@ -341,10 +341,10 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
           <button
             type="button"
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="p-2 text-zinc-400 hover:text-emerald-400 transition-colors rounded-xl hover:bg-zinc-800/60"
+            className="p-3 text-muted hover:text-accent transition-colors rounded-full hover:bg-surface-3/30"
             title="Emoji Picker"
           >
-            <Smile className="w-4 h-4" />
+            <Smile className="w-5 h-5" />
           </button>
 
           <textarea
@@ -357,9 +357,9 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
                 ? "Edit message..."
                 : selectedFile
                 ? "Add a caption..."
-                : "Type a message..."
+                : "Message..."
             }
-            className="flex-1 bg-transparent border-0 text-white placeholder-zinc-500 resize-none max-h-32 min-h-[38px] focus:ring-0 py-2 px-2 text-sm leading-relaxed"
+            className="flex-1 bg-transparent border-0 text-fg placeholder-faint resize-none max-h-32 min-h-[44px] focus:ring-0 py-3 px-2 text-[15px] leading-relaxed font-medium"
             rows={1}
             disabled={isUploading || editMessageMutation.isPending}
             autoFocus={!!editingMessage || !!replyingToMessage}
@@ -374,21 +374,21 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
               isUploading
             }
             className={clsx(
-              "p-2 text-white rounded-xl transition-all duration-150 shrink-0 mb-0.5 disabled:opacity-40 disabled:pointer-events-none active:scale-95 shadow-md",
-              editingMessage
-                ? "bg-emerald-600 hover:bg-emerald-500"
-                : "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20"
+              "w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 shadow-lg",
+              editingMessage || (content.trim() || selectedFile)
+                ? "bg-accent hover:bg-accent-hover text-accent-fg shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                : "bg-surface-3/50 text-muted cursor-not-allowed shadow-none"
             )}
             title="Send"
           >
             {sendMessageMutation.isPending ||
             editMessageMutation.isPending ||
             isUploading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin" />
             ) : editingMessage ? (
-              <Check className="w-4 h-4" />
+              <Check className="w-5 h-5" />
             ) : (
-              <Send className="w-4 h-4" />
+              <ArrowUp className="w-5 h-5 stroke-[2.5]" />
             )}
           </button>
         </div>

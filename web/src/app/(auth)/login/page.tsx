@@ -40,7 +40,7 @@ export default function LoginPage() {
       queryClient.setQueryData(AUTH_QUERY_KEY, { user: data.user });
       router.push("/");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setErrorMsg(error.message || "Invalid email or password");
     },
   });
@@ -51,7 +51,7 @@ export default function LoginPage() {
       queryClient.setQueryData(AUTH_QUERY_KEY, { user: data.user });
       router.push("/");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setErrorMsg(error.message || "Google Sign-In failed");
     },
   });
@@ -63,14 +63,14 @@ export default function LoginPage() {
 
   return (
     <div className="space-y-6">
-      <div className="text-center space-y-1">
-        <h2 className="text-xl font-bold text-white tracking-tight">Sign in to your account</h2>
-        <p className="text-xs text-zinc-400">Welcome back! Please enter your details.</p>
+      <div className="text-center space-y-1.5">
+        <h2 className="font-display text-2xl font-semibold text-fg tracking-tight">Sign in to your account</h2>
+        <p className="text-xs text-muted">Welcome back! Please enter your details.</p>
       </div>
 
       {errorMsg && (
-        <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2.5">
-          <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+        <div className="p-3.5 rounded-lg bg-danger/10 border border-danger/25 text-danger text-xs flex items-center gap-2.5">
+          <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
@@ -97,7 +97,7 @@ export default function LoginPage() {
           <div className="flex justify-end mt-1.5">
             <Link
               href="/forgot-password"
-              className="text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
+              className="text-xs font-medium text-accent hover:text-accent-hover transition-colors"
             >
               Forgot password?
             </Link>
@@ -117,10 +117,10 @@ export default function LoginPage() {
 
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-zinc-800" />
+          <div className="w-full border-t border-border" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase font-mono">
-          <span className="px-3 bg-zinc-900 text-zinc-500">Or continue with</span>
+        <div className="relative flex justify-center text-[10px] tracking-[0.2em] uppercase font-mono">
+          <span className="px-3 bg-surface text-faint">Or continue with</span>
         </div>
       </div>
 
@@ -139,11 +139,11 @@ export default function LoginPage() {
         />
       </div>
 
-      <div className="text-center text-xs text-zinc-400 pt-2">
-        Don't have an account?{" "}
+      <div className="text-center text-xs text-muted pt-2">
+        Don&apos;t have an account?{" "}
         <Link
           href="/register"
-          className="font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+          className="font-semibold text-accent hover:text-accent-hover transition-colors"
         >
           Sign up
         </Link>
