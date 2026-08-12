@@ -1,6 +1,4 @@
-import crypto from "node:crypto";
 import { AppError } from "../../lib/AppError.js";
-import { uploadFile, getFileStream } from "../../lib/storage.js";
 import * as repo from "./media.repository.js";
 
 export async function saveMetadata(userId, data) {

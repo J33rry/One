@@ -1,6 +1,5 @@
 import { broadcastToChat } from "../connectionRegistry.js";
 import * as messagesService from "../../modules/messages/messages.service.js";
-import * as messagesRepo from "../../modules/messages/messages.repository.js";
 
 export async function handleMessageEvent(ws, event) {
     const { type, payload } = event;

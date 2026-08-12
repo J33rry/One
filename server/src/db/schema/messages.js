@@ -7,7 +7,7 @@ import {
     timestamp,
     index,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+// import { sql } from "drizzle-orm";
 import { chats } from "./chats.js";
 import { users } from "./users.js";
 import { media } from "./media.js";

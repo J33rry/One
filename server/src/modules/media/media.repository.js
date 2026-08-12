@@ -1,6 +1,6 @@
 import { db } from "../../db/index.js";
-import { media, messages, chatParticipants } from "../../db/schema/index.js";
-import { eq, and, sql } from "drizzle-orm";
+import { media, messages } from "../../db/schema/index.js";
+import { eq, sql } from "drizzle-orm";
 
 export async function createMedia(data) {
     const [m] = await db.insert(media).values(data).returning();

@@ -1,5 +1,4 @@
 import { Router } from "express";
-import multer from "multer";
 import * as ctrl from "./media.controller.js";
 import { requireAuth } from "../../middleware/requireAuth.js";
 

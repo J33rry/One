@@ -8,7 +8,7 @@ import {
     index,
     uniqueIndex,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+// import { sql } from "drizzle-orm";
 import { users } from "./users.js";
 
 export const media = pgTable(

@@ -5,7 +5,7 @@ import {
     messages,
     users,
 } from "../../db/schema/index.js";
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 export async function createChat(data) {
     const [chat] = await db.insert(chats).values(data).returning();

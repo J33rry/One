@@ -164,24 +164,9 @@ export async function removeReaction(messageId, userId, reaction) {
         );
 }
 
-export async function findReactionsForMessage(messageId) {
-    return db
-        .select()
-        .from(messageReactions)
-        .where(eq(messageReactions.messageId, messageId));
-}
 
 // Message status
 
-export async function markDelivered(messageId, userId) {
-    await db
-        .insert(messageStatus)
-        .values({ messageId, userId, deliveredAt: new Date() })
-        .onConflictDoUpdate({
-            target: [messageStatus.messageId, messageStatus.userId],
-            set: { deliveredAt: sql`COALESCE(message_status.delivered_at, EXCLUDED.delivered_at)` },
-        });
-}
 
 export async function markRead(messageIds, userId) {
     const now = new Date();
@@ -197,12 +182,6 @@ export async function markRead(messageIds, userId) {
     }
 }
 
-export async function findStatusForMessage(messageId) {
-    return db
-        .select()
-        .from(messageStatus)
-        .where(eq(messageStatus.messageId, messageId));
-}
 
 export async function findLatestMessageForChat(chatId) {
     const [msg] = await db

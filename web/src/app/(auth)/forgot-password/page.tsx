@@ -9,7 +9,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Mail, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Mail, AlertCircle, CheckCircle2, Info } from "lucide-react";
 
 const forgotSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -69,6 +69,11 @@ export default function ForgotPasswordPage() {
         </div>
       ) : (
         <>
+          <div className="p-3.5 rounded-lg bg-accent/10 border border-accent/25 text-accent text-xs flex items-start gap-2.5 text-left">
+            <Info className="w-4 h-4 shrink-0 mt-0.5" />
+            <span className="leading-relaxed">Note: The password reset email currently only works for testing purposes.</span>
+          </div>
+
           {errorMsg && (
             <div className="p-3.5 rounded-lg bg-danger/10 border border-danger/25 text-danger text-xs flex items-center gap-2.5">
               <AlertCircle className="w-4 h-4 shrink-0" />

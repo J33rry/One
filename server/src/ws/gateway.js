@@ -2,7 +2,6 @@ import { WebSocketServer } from "ws";
 import {
     addConnection,
     removeConnection,
-    broadcastToUser,
     isOnline,
     getOnlineUserIds,
 } from "./connectionRegistry.js";

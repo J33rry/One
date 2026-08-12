@@ -6,7 +6,7 @@ import {
     index,
     unique,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+// import { sql } from "drizzle-orm";
 import { users } from "./users.js";
 import { chats } from "./chats.js";
 

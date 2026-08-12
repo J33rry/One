@@ -1,6 +1,6 @@
 import { db } from "../../db/index.js";
 import { users } from "../../db/schema/index.js";
-import { eq, and, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 export async function createUser(data) {
     const [user] = await db.insert(users).values(data).returning();
@@ -34,12 +34,3 @@ export async function updateUser(id, data) {
     return user;
 }
 
-
-export async function findUserByResetNonce(nonce) {
-    const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.passwordResetNonce, nonce))
-        .limit(1);
-    return user;
-}

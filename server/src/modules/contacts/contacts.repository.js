@@ -1,6 +1,6 @@
 import { db } from "../../db/index.js";
 import { contacts, blockedUsers, users } from "../../db/schema/index.js";
-import { eq, and, or, ne, notInArray, sql, isNull } from "drizzle-orm";
+import { eq, and, or, ne, notInArray, sql } from "drizzle-orm";
 
 export async function findUserContacts(userId) {
     // Exclude contacts where either party has blocked the other
@@ -83,16 +83,4 @@ export async function updateContactStatus(id, status) {
 
 export async function deleteContact(id) {
     await db.delete(contacts).where(eq(contacts.id, id));
-}
-
-export async function updateContactStatusByPair(userId, contactId, status) {
-    await db
-        .update(contacts)
-        .set({ status, updatedAt: new Date() })
-        .where(
-            and(
-                eq(contacts.userId, userId),
-                eq(contacts.contactId, contactId),
-            ),
-        );
 }
