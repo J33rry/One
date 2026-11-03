@@ -17,6 +17,8 @@ export interface WaterSurface {
   /** Disturb the water at a screen point (CSS px). Radius is in water-plane units. */
   drop(x: number, y: number, radius: number, strength: number): void;
   update(dt: number): void;
+  /** Water heights along the left screen edge, one per row from the top (RGBA stride). */
+  sampleLeftEdge(rows: number): Float32Array | null;
   /** Draw the water; `messages` is a canvas of bubbles refracted by the ripples. */
   render(time: number, messages?: TexImageSource | null): void;
   dispose(): void;
@@ -155,6 +157,22 @@ void main() {
   outColor = vec4(col, 1.0);
 }`;
 
+// Samples the height field along the left screen edge into a rows x 1 strip.
+const EDGE_FS = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 outColor;
+uniform sampler2D uWater;
+uniform float uAspect;
+uniform float uDomain;
+uniform float uYMin;
+void main() {
+  float k = ${C.toFixed(3)} + vUv.x;
+  vec2 p = vec2(-0.5 * uAspect / k, ${A.toFixed(3)} / k);
+  vec2 uv = vec2((p.x + uDomain * 0.5) / uDomain, (p.y - uYMin) / uDomain);
+  outColor = vec4(texture(uWater, uv).r, 0.0, 0.0, 1.0);
+}`;
+
 function compile(gl: WebGL2RenderingContext, vs: string, fs: string) {
   const program = gl.createProgram();
   const shaders = [
@@ -181,14 +199,17 @@ function compile(gl: WebGL2RenderingContext, vs: string, fs: string) {
 export function createWaterSurface(canvas: HTMLCanvasElement): WaterSurface | null {
   const gl = canvas.getContext("webgl2", { antialias: false, alpha: false, premultipliedAlpha: false });
   if (!gl) return null;
-  if (!gl.getExtension("EXT_color_buffer_float") && !gl.getExtension("EXT_color_buffer_half_float")) return null;
+  // Full float targets also let us read the edge heights back for the shore.
+  const canReadFloat = !!gl.getExtension("EXT_color_buffer_float");
+  if (!canReadFloat && !gl.getExtension("EXT_color_buffer_half_float")) return null;
 
-  let programs: { drop: WebGLProgram; update: WebGLProgram; render: WebGLProgram };
+  let programs: { drop: WebGLProgram; update: WebGLProgram; render: WebGLProgram; edge: WebGLProgram };
   try {
     programs = {
       drop: compile(gl, QUAD_VS, DROP_FS),
       update: compile(gl, QUAD_VS, UPDATE_FS),
       render: compile(gl, QUAD_VS, RENDER_FS),
+      edge: compile(gl, QUAD_VS, EDGE_FS),
     };
   } catch (err) {
     console.warn("Water shaders unavailable, falling back to 2D", err);
@@ -225,6 +246,9 @@ export function createWaterSurface(canvas: HTMLCanvasElement): WaterSurface | nu
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+  let edgeTarget: { texture: WebGLTexture; framebuffer: WebGLFramebuffer; rows: number; data: Float32Array } | null =
+    null;
 
   let current = 0;
   let width = 1;
@@ -313,7 +337,44 @@ export function createWaterSurface(canvas: HTMLCanvasElement): WaterSurface | nu
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     },
 
+    sampleLeftEdge(rows) {
+      if (!canReadFloat || rows < 1) return null;
+      if (!edgeTarget || edgeTarget.rows !== rows) {
+        if (edgeTarget) {
+          gl.deleteTexture(edgeTarget.texture);
+          gl.deleteFramebuffer(edgeTarget.framebuffer);
+        }
+        const texture = gl.createTexture()!;
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, rows, 1, 0, gl.RGBA, gl.FLOAT, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        const framebuffer = gl.createFramebuffer()!;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+        edgeTarget = { texture, framebuffer, rows, data: new Float32Array(rows * 4) };
+      }
+      const program = programs.edge;
+      gl.useProgram(program);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, edgeTarget.framebuffer);
+      gl.viewport(0, 0, rows, 1);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, targets[current].texture);
+      gl.uniform1i(gl.getUniformLocation(program, "uWater"), 0);
+      gl.uniform1f(gl.getUniformLocation(program, "uAspect"), aspect);
+      gl.uniform1f(gl.getUniformLocation(program, "uDomain"), domain);
+      gl.uniform1f(gl.getUniformLocation(program, "uYMin"), yMin);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.readPixels(0, 0, rows, 1, gl.RGBA, gl.FLOAT, edgeTarget.data);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      return edgeTarget.data;
+    },
+
     dispose() {
+      if (edgeTarget) {
+        gl.deleteTexture(edgeTarget.texture);
+        gl.deleteFramebuffer(edgeTarget.framebuffer);
+      }
       for (const t of targets) {
         gl.deleteTexture(t.texture);
         gl.deleteFramebuffer(t.framebuffer);

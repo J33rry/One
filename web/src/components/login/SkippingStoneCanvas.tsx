@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import clsx from "clsx";
 import { createWaterSurface, waterPerspective } from "./waterSurface";
 import { drawBubble, type Bubble, type BubbleVariant } from "./bubbles";
 import { drawStone, makeStone, type Stone } from "./stone";
+import { createShore } from "./shore";
 
 // Conversation pairs: the last two skips of a throw "say" one pair.
 const CONVERSATIONS: [string, string][] = [
@@ -73,7 +74,14 @@ const THROW_MODES: { a: [number, number]; b: [number, number] }[] = [
 
 const FLY_SPEED = 0.032; // hop duration factor (seconds per sqrt px)
 
-export function SkippingStoneCanvas({ className }: { className?: string }) {
+export function SkippingStoneCanvas({
+  className,
+  shoreRef,
+}: {
+  className?: string;
+  /** Canvas over the neighbouring light panel, where ripples continue but die out fast. */
+  shoreRef?: RefObject<HTMLCanvasElement | null>;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const waterRef = useRef<HTMLCanvasElement>(null);
@@ -89,6 +97,8 @@ export function SkippingStoneCanvas({ className }: { className?: string }) {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // Realistic GPU water when WebGL2 float targets exist; otherwise the 2D rings below.
     const water = createWaterSurface(waterCanvas);
+    const shoreCanvas = shoreRef?.current;
+    const shore = water && shoreCanvas ? createShore(shoreCanvas) : null;
     // Bubbles are painted here and handed to the water shader, which ripples them.
     const messageCanvas = document.createElement("canvas");
     const msgCtx = messageCanvas.getContext("2d")!;
@@ -106,6 +116,7 @@ export function SkippingStoneCanvas({ className }: { className?: string }) {
       canvas.height = Math.round(H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       water?.resize(W, H, Math.min(dpr, 1.5));
+      shore?.resize();
       messageCanvas.width = Math.round(W * dpr);
       messageCanvas.height = Math.round(H * dpr);
       msgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -113,6 +124,7 @@ export function SkippingStoneCanvas({ className }: { className?: string }) {
     resize();
     const observer = new ResizeObserver(resize);
     observer.observe(container);
+    if (shoreCanvas) observer.observe(shoreCanvas);
 
     // Closer to the viewer (lower on screen) = bigger stone and ripples.
     const persp = (y: number) => waterPerspective(y, H);
@@ -375,6 +387,10 @@ export function SkippingStoneCanvas({ className }: { className?: string }) {
           for (const b of liveBubbles) drawBubble(msgCtx, b, time, font);
         }
         water.update(dt);
+        if (shore) {
+          shore.update(water.sampleLeftEdge(shore.rows), dt);
+          shore.render();
+        }
         water.render(time, hasBubbles || hadBubbles ? messageCanvas : null);
         hadBubbles = hasBubbles;
         ctx.clearRect(0, 0, W, H);
@@ -394,7 +410,7 @@ export function SkippingStoneCanvas({ className }: { className?: string }) {
       water?.dispose();
       observer.disconnect();
     };
-  }, []);
+  }, [shoreRef]);
 
   return (
     <div ref={containerRef} className={clsx("relative overflow-hidden bg-[#05080f]", className)} aria-hidden="true">
