@@ -2,8 +2,8 @@ import React from "react";
 import { SkippingStoneCanvas } from "@/components/login/SkippingStoneCanvas";
 import { PebbleLogo } from "@/components/login/PebbleAuth";
 
-// Split screen for login/register: form on the left, live skipping-stone water on
-// the right. Living in the layout keeps the water running across both pages.
+// Split screen for the auth pages: form on the left, live skipping-stone water on
+// the right. Living in the layout keeps the water running across them.
 export default function PebbleAuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid h-full overflow-y-auto bg-[#f6f4fd] text-[#14121f] [color-scheme:light] lg:grid-cols-[minmax(440px,40%)_1fr] lg:overflow-hidden">

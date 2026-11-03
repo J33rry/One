@@ -72,7 +72,6 @@ const THROW_MODES: { a: [number, number]; b: [number, number] }[] = [
 ];
 
 const FLY_SPEED = 0.032; // hop duration factor (seconds per sqrt px)
-const TRAIL_FADE = 2;
 
 export function SkippingStoneCanvas({ className }: { className?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -319,33 +318,6 @@ export function SkippingStoneCanvas({ className }: { className?: string }) {
       }
     };
 
-    const drawTrail = (th: Throw) => {
-      let alpha = 0.38;
-      if (th.endTime !== null) alpha *= Math.max(0, 1 - (time - th.endTime) / TRAIL_FADE);
-      if (alpha <= 0) return;
-      ctx.save();
-      ctx.setLineDash([3, 5]);
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = `rgba(220,228,255,${alpha})`;
-      ctx.beginPath();
-      let started = false;
-      for (const hop of th.hops) {
-        const t = (time - hop.start) / hop.dur;
-        if (t <= 0) break;
-        const steps = 18;
-        const upto = Math.min(t, 1);
-        for (let i = 0; i <= steps; i++) {
-          const pos = hopPos(hop, (i / steps) * upto);
-          if (!started) {
-            ctx.moveTo(pos.x, pos.y - pos.z);
-            started = true;
-          } else ctx.lineTo(pos.x, pos.y - pos.z);
-        }
-      }
-      ctx.stroke();
-      ctx.restore();
-    };
-
     const drawThrownStone = (th: Throw) => {
       const hop = th.hops.find((h) => time >= h.start && time < h.start + h.dur);
       if (!hop) return;
@@ -412,7 +384,6 @@ export function SkippingStoneCanvas({ className }: { className?: string }) {
       }
       for (const r of ripples) drawRipple(r);
       if (current) {
-        drawTrail(current);
         drawThrownStone(current);
       }
     };

@@ -2,9 +2,10 @@
 
 import React, { useState } from "react";
 import clsx from "clsx";
-import { AlertCircle, Eye, EyeOff, Loader2, type LucideIcon } from "lucide-react";
+import Link from "next/link";
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Info, Loader2, type LucideIcon } from "lucide-react";
 
-// Shared pieces for the pebble auth screens (login, register).
+// Shared pieces for the pebble auth screens (login, register, password reset).
 
 export function PebbleLogo({ className }: { className?: string }) {
   return (
@@ -125,3 +126,69 @@ export function PebbleDivider() {
 }
 
 export const pebbleLinkClass = "font-semibold text-[#6a6bef] transition-colors hover:text-[#4f50d6]";
+
+/** A Link styled like the primary (or outlined) pebble button. */
+export function PebbleLinkButton({
+  href,
+  variant = "primary",
+  children,
+}: {
+  href: string;
+  variant?: "primary" | "outline";
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={clsx(
+        "flex w-full items-center justify-center rounded-2xl py-4 text-lg font-medium transition-colors",
+        variant === "primary"
+          ? "bg-[#7b7cf6] text-white shadow-[0_10px_30px_-12px_rgba(123,124,246,0.8)] hover:bg-[#6a6bef]"
+          : "border border-[#d9d6e8] bg-white/70 text-[#14121f] hover:border-[#7b7cf6]"
+      )}
+    >
+      {children}
+    </Link>
+  );
+}
+
+export function PebbleNote({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mt-6 flex items-start gap-2.5 rounded-xl border border-[#d6d4f6] bg-[#eceafd] p-3.5 text-sm text-[#4f50d6]">
+      <Info className="mt-0.5 h-4 w-4 shrink-0" />
+      <span className="leading-relaxed">{children}</span>
+    </div>
+  );
+}
+
+/** Full-panel outcome message (sent, done, invalid link) with a follow-up action. */
+export function PebbleStatus({
+  tone,
+  title,
+  children,
+  action,
+}: {
+  tone: "success" | "error";
+  title: string;
+  children: React.ReactNode;
+  action: React.ReactNode;
+}) {
+  const Icon = tone === "success" ? CheckCircle2 : AlertCircle;
+  return (
+    <div>
+      <div
+        className={clsx(
+          "flex h-14 w-14 items-center justify-center rounded-full border",
+          tone === "success"
+            ? "border-[#bfe3cc] bg-[#e7f6ec] text-[#2f8a52]"
+            : "border-[#e2a3a0] bg-[#fdeceb] text-[#b23a32]"
+        )}
+      >
+        <Icon className="h-7 w-7" />
+      </div>
+      <h1 className="mt-6 text-[36px] font-bold leading-tight tracking-tight">{title}</h1>
+      <p className="mt-2 text-[16px] leading-relaxed text-[#5d5a70]">{children}</p>
+      <div className="mt-8">{action}</div>
+    </div>
+  );
+}
