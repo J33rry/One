@@ -22,6 +22,8 @@ import blockedRoutes from "./src/modules/blocked/blocked.routes.js";
 import chatsRoutes from "./src/modules/chats/chats.routes.js";
 import messagesRoutes from "./src/modules/messages/messages.routes.js";
 import mediaRoutes from "./src/modules/media/media.routes.js";
+import foldersRoutes from "./src/modules/folders/folders.routes.js";
+import searchRoutes from "./src/modules/messages/search.routes.js";
 import callsRoutes from "./src/modules/calls/calls.routes.js";
 
 const app = express();
@@ -64,6 +66,8 @@ app.use("/api/v1/chats", chatsRoutes);
 // Messages routes are scoped under /chats/:chatId/messages
 app.use("/api/v1/chats", messagesRoutes);
 app.use("/api/v1/media", mediaRoutes);
+app.use("/api/v1/folders", foldersRoutes);
+app.use("/api/v1/search", searchRoutes);
 // Calls routes have both /chats/:chatId/calls and /calls/:callId/*
 app.use("/api/v1", callsRoutes);
 

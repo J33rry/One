@@ -25,6 +25,37 @@ export interface Chat {
   participants?: ChatParticipant[];
   // Sometimes returned by list queries
   latestMessage?: Message;
+  // Per-user chat state, returned by the chat list
+  unreadCount?: number;
+  mentionCount?: number;
+  folderIds?: string[];
+  lastReadAt?: string | null;
+  pinnedAt?: string | null;
+  archivedAt?: string | null;
+  isMuted?: boolean;
+}
+
+export type MediaKind = 'image' | 'video' | 'audio' | 'file' | 'link';
+
+export interface ChatMediaItem {
+  id: string;
+  messageId: string;
+  type?: Exclude<MediaKind, 'link'>;
+  url: string;
+  fileName?: string;
+  mimeType?: string;
+  fileSize?: number | null;
+  host?: string | null;
+  createdAt: string;
+  sender: { id: string; username: string; displayName: string };
+}
+
+export type ChatMediaCounts = Record<MediaKind, number>;
+
+export interface ChatPreferences {
+  pinned?: boolean;
+  archived?: boolean;
+  muted?: boolean;
 }
 
 export interface CreateChatPayload {
@@ -35,7 +66,22 @@ export interface CreateChatPayload {
 }
 
 export const chatsApi = {
-  getChats: () => apiClient<{ chats: Chat[] }>('/chats'),
+  getChats: (opts?: { archived?: boolean }) =>
+    apiClient<{ chats: Chat[] }>(`/chats${opts?.archived ? '?archived=true' : ''}`),
+
+  getChatMediaCounts: (chatId: string) =>
+    apiClient<{ counts: ChatMediaCounts }>(`/chats/${chatId}/media/counts`),
+
+  getChatMedia: (chatId: string, kind: MediaKind, before?: string) =>
+    apiClient<{ items: ChatMediaItem[] }>(
+      `/chats/${chatId}/media?kind=${kind}${before ? `&before=${before}` : ''}`,
+    ),
+
+  updateChatPreferences: (chatId: string, prefs: ChatPreferences) =>
+    apiClient<{ participant: ChatParticipant }>(`/chats/${chatId}/preferences`, {
+      method: 'PATCH',
+      body: JSON.stringify(prefs),
+    }),
   
   createChat: (data: CreateChatPayload) => apiClient<{ chat: Chat }>('/chats', {
     method: 'POST',

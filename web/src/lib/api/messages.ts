@@ -17,6 +17,12 @@ export interface MessageStatus {
   readAt: string | null;
 }
 
+export interface MentionRef {
+  userId: string;
+  username: string;
+  displayName: string;
+}
+
 export interface Message {
   id: string;
   chatId: string;
@@ -40,6 +46,7 @@ export interface Message {
   };
   reactions?: Reaction[];
   status?: MessageStatus[];
+  mentions?: MentionRef[];
 }
 
 export interface SendMessagePayload {

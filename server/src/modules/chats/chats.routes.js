@@ -13,6 +13,16 @@ router.use(requireAuth());
 router.get("/", ctrl.listChats);
 router.post("/", ctrl.createChat);
 
+// Declared before /:chatId routes that could otherwise shadow them.
+router.patch(
+    "/:chatId/preferences",
+    requireChatParticipant,
+    ctrl.updateMyChatPreferences,
+);
+
+router.get("/:chatId/media/counts", requireChatParticipant, ctrl.getChatMediaCounts);
+router.get("/:chatId/media", requireChatParticipant, ctrl.listChatMedia);
+
 router.get("/:chatId", requireChatParticipant, ctrl.getChat);
 router.patch("/:chatId", requireChatAdmin, ctrl.updateChat);
 router.delete("/:chatId", requireChatAdmin, ctrl.deleteChat);

@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import { messagesApi, Message } from "@/lib/api/messages";
 import { callsApi, Call } from "@/lib/api/calls";
+import { chatsApi } from "@/lib/api/chats";
 import React, {
     useEffect,
     useRef,
@@ -29,6 +30,8 @@ import {
     FileIcon,
     Download,
     Eye,
+    Check,
+    CheckCheck,
 } from "lucide-react";
 import { format, isSameDay } from "date-fns";
 import clsx from "clsx";
@@ -38,6 +41,7 @@ import EmojiPicker, { Theme } from "emoji-picker-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { MediaLightbox } from "@/components/ui/MediaLightbox";
 import { MessageListSkeleton } from "@/components/ui/Skeleton";
+import { renderMessageText } from "@/lib/utils/mentions";
 
 interface MessageListProps {
     chatId: string;
@@ -56,6 +60,7 @@ function MessageBubble({
     chatId,
     prevMsgMap,
     onOpenMedia,
+    isGroup,
 }: {
     msg: Message;
     isMe: boolean;
@@ -63,12 +68,18 @@ function MessageBubble({
     chatId: string;
     prevMsgMap: Map<string, Message>;
     onOpenMedia: (url: string, type: "image" | "video") => void;
+    isGroup: boolean;
 }) {
     const { user: currentUser } = useAuth();
     const queryClient = useQueryClient();
     const { setEditingMessage, setReplyingToMessage } = useMessageActions();
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [showReactionsMenu, setShowReactionsMenu] = useState(false);
+
+    // Senders never mark their own message read, so every status row with a
+    // readAt belongs to someone else: this is the "seen by" count.
+    const readCount =
+        msg.status?.filter((s) => s.readAt).length ?? 0;
 
     const handleReact = (emoji: string) => {
         messagesApi
@@ -274,7 +285,12 @@ function MessageBubble({
                             {/* Text content */}
                             {msg.content && (
                                 <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] leading-relaxed font-medium">
-                                    {msg.content}
+                                    {renderMessageText(
+                                        msg.content,
+                                        msg.mentions,
+                                        currentUser?.id,
+                                        isMe,
+                                    )}
                                 </p>
                             )}
 
@@ -458,10 +474,36 @@ function MessageBubble({
 
                 <div
                     className={clsx(
-                        "flex items-center gap-1 px-2 mt-1.5 text-[10px] text-faint font-mono tracking-wider",
+                        "flex items-center gap-1.5 px-2 mt-1.5 text-[10px] text-faint font-mono tracking-wider",
                     )}
                 >
+                    {/* Read count — only members other than the sender get a
+                        message_status row, so this is "how many have seen it". */}
+                    {isGroup && !msg.isDeleted && readCount > 0 && (
+                        <span
+                            className="flex items-center gap-0.5"
+                            title={`Seen by ${readCount}`}
+                        >
+                            <Eye className="w-3 h-3" />
+                            {readCount}
+                        </span>
+                    )}
+
                     <span>{format(new Date(msg.createdAt), "HH:mm")}</span>
+
+                    {isMe &&
+                        !msg.isDeleted &&
+                        (readCount > 0 ? (
+                            <CheckCheck
+                                className="w-3.5 h-3.5 text-accent"
+                                aria-label="Read"
+                            />
+                        ) : (
+                            <Check
+                                className="w-3.5 h-3.5 opacity-60"
+                                aria-label="Sent"
+                            />
+                        ))}
                 </div>
             </div>
         </div>
@@ -478,6 +520,13 @@ export function MessageList({ chatId }: MessageListProps) {
 
     const { typingUsers } = useTyping(chatId);
     const { startCall } = useCallStore();
+
+    // Already warm in the cache — ChatMain fetches this on the same key.
+    const { data: chatData } = useQuery({
+        queryKey: ["chats", chatId],
+        queryFn: () => chatsApi.getChatDetails(chatId),
+    });
+    const isGroup = chatData?.chat?.type === "group";
 
     const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
     const [lightboxType, setLightboxType] = useState<"image" | "video">(
@@ -581,6 +630,18 @@ export function MessageList({ chatId }: MessageListProps) {
     useSocketEvent("message:reaction", () => {
         queryClient.invalidateQueries({ queryKey: ["messages", chatId] });
     });
+
+    // Someone else read our messages — refresh so the ticks and seen-count update.
+    useSocketEvent(
+        "message:status",
+        (payload: { chatId?: string; messageIds?: string[] }) => {
+            if (!payload.chatId || payload.chatId === chatId) {
+                queryClient.invalidateQueries({
+                    queryKey: ["messages", chatId],
+                });
+            }
+        },
+    );
 
     useSocketEvent("call:ended", () => {
         queryClient.invalidateQueries({ queryKey: ["calls", chatId] });
@@ -819,6 +880,7 @@ export function MessageList({ chatId }: MessageListProps) {
                                                   chatId={chatId}
                                                   prevMsgMap={prevMsgMap}
                                                   onOpenMedia={handleOpenMedia}
+                                                  isGroup={isGroup}
                                               />
                                           );
                                       })()}

@@ -1,8 +1,9 @@
 import { AppError } from "../../lib/AppError.js";
 import * as repo from "./chats.repository.js";
-import { isBlocked } from "../blocked/blocked.repository.js";
+import { isBlocked, findBlocksBetween } from "../blocked/blocked.repository.js";
 import { broadcastToChat, broadcastToUser } from "../../ws/connectionRegistry.js";
-import { findLatestMessageForChat } from "../messages/messages.repository.js";
+import { findLatestMessagesForChats } from "../messages/messages.repository.js";
+import { findFolderIdsForChats } from "../folders/folders.repository.js";
 
 function mapParticipants(rawParticipants) {
     return rawParticipants.map(p => ({
@@ -21,29 +22,139 @@ function mapParticipants(rawParticipants) {
     }));
 }
 
-export async function listChats(userId) {
-    const userChats = await repo.findUserChats(userId);
-    const chats = await Promise.all(userChats.map(async ({ chat, role }) => {
-        const rawParticipants = await repo.findChatParticipants(chat.id);
-        const latestMessage = await findLatestMessageForChat(chat.id);
-        
-        let blocked = false;
-        if (chat.type === "dm") {
-            const otherParticipant = rawParticipants.find(p => p.userId !== userId);
-            if (otherParticipant) {
-                blocked = await isBlocked(userId, otherParticipant.userId) || await isBlocked(otherParticipant.userId, userId);
-            }
-        }
-        
+export async function listChats(userId, { archived = false } = {}) {
+    // Always an explicit boolean here: the repository treats `undefined` as
+    // "every chat", which is what the presence fan-out wants, not the list.
+    const userChats = await repo.findUserChats(userId, { archived: !!archived });
+    if (userChats.length === 0) return [];
+
+    const chatIds = userChats.map(({ chat }) => chat.id);
+
+    // A handful of flat queries for the whole list, rather than ~4 per chat.
+    const [participantRows, latestByChat, unreadByChat, folderIdsByChat] =
+        await Promise.all([
+            repo.findChatParticipantsForChats(chatIds),
+            findLatestMessagesForChats(chatIds),
+            repo.findUnreadCountsForUser(userId),
+            findFolderIdsForChats(userId, chatIds),
+        ]);
+
+    const participantsByChat = new Map();
+    for (const p of participantRows) {
+        if (!participantsByChat.has(p.chatId)) participantsByChat.set(p.chatId, []);
+        participantsByChat.get(p.chatId).push(p);
+    }
+
+    // Resolve blocking for every DM counterpart at once.
+    const dmOtherUserIds = userChats
+        .filter(({ chat }) => chat.type === "dm")
+        .map(({ chat }) =>
+            (participantsByChat.get(chat.id) || []).find(p => p.userId !== userId)?.userId,
+        )
+        .filter(Boolean);
+    const blockedWith = await findBlocksBetween(userId, dmOtherUserIds);
+
+    return userChats.map(({ chat, role, lastReadAt, pinnedAt, archivedAt, isMuted }) => {
+        const rawParticipants = participantsByChat.get(chat.id) || [];
+        const otherUserId =
+            chat.type === "dm"
+                ? rawParticipants.find(p => p.userId !== userId)?.userId
+                : null;
+
         return {
             ...chat,
             myRole: role,
-            isBlocked: blocked,
+            isBlocked: otherUserId ? blockedWith.has(otherUserId) : false,
             participants: mapParticipants(rawParticipants),
-            latestMessage,
+            latestMessage: latestByChat.get(chat.id) || null,
+            unreadCount: unreadByChat.get(chat.id)?.unread || 0,
+            mentionCount: unreadByChat.get(chat.id)?.mentions || 0,
+            folderIds: folderIdsByChat.get(chat.id) || [],
+            lastReadAt,
+            pinnedAt,
+            archivedAt,
+            isMuted,
         };
+    });
+}
+
+const URL_RE = /https?:\/\/[^\s<>"')]+/gi;
+
+export async function listChatMedia(chatId, { kind, before, limit }) {
+    if (kind === "link") {
+        const rows = await repo.findChatLinks(chatId, { before, limit });
+        // One message can carry several links; flatten them into entries.
+        const items = [];
+        for (const row of rows) {
+            const urls = row.content?.match(URL_RE) || [];
+            for (const [i, url] of urls.entries()) {
+                let host = null;
+                try {
+                    host = new URL(url).host;
+                } catch {
+                    // Keep the raw URL even if it doesn't parse.
+                }
+                items.push({
+                    id: `${row.messageId}:${i}`,
+                    messageId: row.messageId,
+                    url,
+                    host,
+                    createdAt: row.createdAt,
+                    sender: {
+                        id: row.senderId,
+                        username: row.senderUsername,
+                        displayName: row.senderDisplayName,
+                    },
+                });
+            }
+        }
+        return items;
+    }
+
+    const rows = await repo.findChatMedia(chatId, { kind, before, limit });
+    return rows.map((r) => ({
+        id: r.mediaId,
+        messageId: r.messageId,
+        type: r.type,
+        url: r.url,
+        fileName: r.fileName,
+        mimeType: r.mimeType,
+        // bigint is not JSON-serialisable.
+        fileSize: r.fileSize == null ? null : Number(r.fileSize),
+        createdAt: r.createdAt,
+        sender: {
+            id: r.senderId,
+            username: r.senderUsername,
+            displayName: r.senderDisplayName,
+        },
     }));
-    return chats;
+}
+
+export async function getChatMediaCounts(chatId) {
+    return repo.countChatMediaByKind(chatId);
+}
+
+export async function updateMyChatPreferences(chatId, userId, { pinned, archived, muted }) {
+    const now = new Date();
+    const patch = {};
+    if (pinned !== undefined) patch.pinnedAt = pinned ? now : null;
+    if (archived !== undefined) patch.archivedAt = archived ? now : null;
+    if (muted !== undefined) patch.isMuted = muted;
+
+    const row = await repo.updateParticipantPreferences(chatId, userId, patch);
+    if (!row) throw new AppError(404, "Chat participant not found", "NOT_FOUND");
+
+    broadcastToUser(userId, {
+        type: "chat:preferences",
+        payload: {
+            chatId,
+            pinnedAt: row.pinnedAt,
+            archivedAt: row.archivedAt,
+            isMuted: row.isMuted,
+        },
+    });
+
+    return row;
 }
 
 export async function createChat(userId, { type, name, description, participantIds }) {

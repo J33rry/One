@@ -153,6 +153,34 @@ export const removeReaction = asyncHandler(async (req, res) => {
     res.status(204).end();
 });
 
+// Scoped to one chat (guarded by requireChatParticipant) — the chatId comes
+// from the path, not the query.
+export const searchInChat = asyncHandler(async (req, res) => {
+    const { q, before, limit } = v.searchSchema.parse({
+        ...req.query,
+        chatId: req.params.chatId,
+    });
+    const results = await messagesService.searchMessages(req.user.id, {
+        q,
+        chatId: req.params.chatId,
+        before,
+        limit,
+    });
+    res.json({ results });
+});
+
+// Global: no chatId, so the participant join inside the query is the guard.
+export const searchAll = asyncHandler(async (req, res) => {
+    const { q, chatId, before, limit } = v.searchSchema.parse(req.query);
+    const results = await messagesService.searchMessages(req.user.id, {
+        q,
+        chatId,
+        before,
+        limit,
+    });
+    res.json({ results });
+});
+
 export const markRead = asyncHandler(async (req, res) => {
     const { messageIds } = v.markReadSchema.parse(req.body);
     await messagesService.markRead(req.params.chatId, messageIds, req.user.id);
@@ -160,6 +188,7 @@ export const markRead = asyncHandler(async (req, res) => {
     broadcastToChat(req.params.chatId, {
         type: "message:status",
         payload: {
+            chatId: req.params.chatId,
             messageIds,
             userId: req.user.id,
             status: "read",

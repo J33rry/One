@@ -3,8 +3,34 @@ import * as chatsService from "./chats.service.js";
 import * as v from "./chats.validation.js";
 
 export const listChats = asyncHandler(async (req, res) => {
-    const chats = await chatsService.listChats(req.user.id);
+    const { archived } = v.listChatsQuerySchema.parse(req.query);
+    const chats = await chatsService.listChats(req.user.id, { archived });
     res.json({ chats });
+});
+
+export const listChatMedia = asyncHandler(async (req, res) => {
+    const { kind, before, limit } = v.chatMediaQuerySchema.parse(req.query);
+    const items = await chatsService.listChatMedia(req.params.chatId, {
+        kind,
+        before,
+        limit,
+    });
+    res.json({ items });
+});
+
+export const getChatMediaCounts = asyncHandler(async (req, res) => {
+    const counts = await chatsService.getChatMediaCounts(req.params.chatId);
+    res.json({ counts });
+});
+
+export const updateMyChatPreferences = asyncHandler(async (req, res) => {
+    const body = v.chatPreferencesSchema.parse(req.body);
+    const participant = await chatsService.updateMyChatPreferences(
+        req.params.chatId,
+        req.user.id,
+        body,
+    );
+    res.json({ participant });
 });
 
 export const createChat = asyncHandler(async (req, res) => {

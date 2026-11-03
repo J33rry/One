@@ -3,6 +3,7 @@ import {
     messages,
     messageReactions,
     messageStatus,
+    messageMentions,
     users,
     media,
 } from "../../db/schema/index.js";
@@ -108,10 +109,13 @@ export async function findMessages(chatId, { before, limit }) {
         statusByMsg.get(s.messageId).push(s);
     });
 
+    const mentionsByMsg = await findMentionsForMessages(messageIds);
+
     return fetchedMessages.map(m => ({
         ...m,
         reactions: reactionsByMsg.get(m.id) || [],
         status: statusByMsg.get(m.id) || [],
+        mentions: mentionsByMsg.get(m.id) || [],
     }));
 }
 
@@ -202,4 +206,143 @@ export async function findLatestMessageForChat(chatId) {
         .orderBy(desc(messages.createdAt))
         .limit(1);
     return msg || null;
+}
+
+// --- Search ---------------------------------------------------------------
+
+/**
+ * Full-text search over messages.
+ *
+ * The chat_participants join IS the authorization: results can only come from
+ * chats the caller is currently in, and `created_at >= cp.joined_at` hides
+ * history from before they joined, matching the unread rule.
+ *
+ * websearch_to_tsquery (not to_tsquery) because the latter throws on raw user
+ * input containing &, : or !.
+ *
+ * ts_headline uses « » sentinels rather than HTML, so the client can split in
+ * JS and never needs dangerouslySetInnerHTML.
+ */
+export async function searchMessages({ userId, chatId = null, query, before = null, limit = 25 }) {
+    const result = await db.execute(sql`
+        SELECT m.id, m.chat_id, m.sender_id, m.content, m.type,
+               m.created_at,
+               c.name AS chat_name, c.type AS chat_type,
+               u.username AS sender_username,
+               u.display_name AS sender_display_name,
+               u.avatar_url AS sender_avatar_url,
+               ts_headline('english', m.content, q.query,
+                   'StartSel=«,StopSel=»,MaxFragments=1,MaxWords=18,MinWords=5'
+               ) AS snippet
+        FROM websearch_to_tsquery('english', ${query}) AS q(query)
+        JOIN messages m ON m.search_vector @@ q.query
+        JOIN chat_participants cp
+          ON cp.chat_id = m.chat_id AND cp.user_id = ${userId}
+        JOIN chats c ON c.id = m.chat_id
+        JOIN users u ON u.id = m.sender_id
+        WHERE m.is_deleted = false
+          AND m.created_at >= cp.joined_at
+          AND (${chatId}::uuid IS NULL OR m.chat_id = ${chatId}::uuid)
+          AND (
+                ${before}::timestamptz IS NULL
+                OR m.created_at < ${before}::timestamptz
+              )
+        ORDER BY m.created_at DESC
+        LIMIT ${limit}
+    `);
+
+    return result.rows.map((r) => ({
+        id: r.id,
+        chatId: r.chat_id,
+        chatName: r.chat_name,
+        chatType: r.chat_type,
+        content: r.content,
+        snippet: r.snippet,
+        type: r.type,
+        createdAt: r.created_at,
+        sender: {
+            id: r.sender_id,
+            username: r.sender_username,
+            displayName: r.sender_display_name,
+            avatarUrl: r.sender_avatar_url,
+        },
+    }));
+}
+
+// --- Mentions -------------------------------------------------------------
+
+export async function replaceMentions(messageId, userIds) {
+    await db
+        .delete(messageMentions)
+        .where(eq(messageMentions.messageId, messageId));
+
+    if (userIds.length === 0) return;
+
+    await db
+        .insert(messageMentions)
+        .values(userIds.map((userId) => ({ messageId, userId })))
+        .onConflictDoNothing();
+}
+
+export async function findMentionsForMessages(messageIds) {
+    if (messageIds.length === 0) return new Map();
+
+    const rows = await db
+        .select({
+            messageId: messageMentions.messageId,
+            userId: messageMentions.userId,
+            username: users.username,
+            displayName: users.displayName,
+        })
+        .from(messageMentions)
+        .innerJoin(users, eq(users.id, messageMentions.userId))
+        .where(inArray(messageMentions.messageId, messageIds));
+
+    const byMessage = new Map();
+    for (const r of rows) {
+        if (!byMessage.has(r.messageId)) byMessage.set(r.messageId, []);
+        byMessage.get(r.messageId).push({
+            userId: r.userId,
+            username: r.username,
+            displayName: r.displayName,
+        });
+    }
+    return byMessage;
+}
+
+// Batched sibling of the above: one DISTINCT ON instead of one query per chat.
+export async function findLatestMessagesForChats(chatIds) {
+    if (chatIds.length === 0) return new Map();
+
+    const result = await db.execute(sql`
+        SELECT DISTINCT ON (m.chat_id)
+            m.id, m.chat_id, m.sender_id, m.content, m.type,
+            m.is_deleted, m.created_at,
+            u.username AS sender_username,
+            u.display_name AS sender_display_name
+        FROM messages m
+        LEFT JOIN users u ON u.id = m.sender_id
+        WHERE m.chat_id IN (${sql.join(
+            chatIds.map((id) => sql`${id}::uuid`),
+            sql`, `,
+        )})
+        ORDER BY m.chat_id, m.created_at DESC
+    `);
+
+    return new Map(
+        result.rows.map((r) => [
+            r.chat_id,
+            {
+                id: r.id,
+                chatId: r.chat_id,
+                senderId: r.sender_id,
+                content: r.content,
+                type: r.type,
+                isDeleted: r.is_deleted,
+                createdAt: r.created_at,
+                senderUsername: r.sender_username,
+                senderDisplayName: r.sender_display_name,
+            },
+        ]),
+    );
 }

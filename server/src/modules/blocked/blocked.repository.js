@@ -1,6 +1,6 @@
 import { db } from "../../db/index.js";
 import { blockedUsers, users } from "../../db/schema/index.js";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or, inArray } from "drizzle-orm";
 
 export async function findBlockedByUser(userId) {
     return db
@@ -43,6 +43,36 @@ export async function isBlocked(userA, userB) {
         )
         .limit(1);
     return !!block;
+}
+
+// Every block between `userId` and the given users, in either direction, in one
+// query — replaces the 2-per-chat isBlocked calls the chat list used to make.
+export async function findBlocksBetween(userId, otherUserIds) {
+    if (otherUserIds.length === 0) return new Set();
+
+    const rows = await db
+        .select({
+            userId: blockedUsers.userId,
+            blockedUserId: blockedUsers.blockedUserId,
+        })
+        .from(blockedUsers)
+        .where(
+            or(
+                and(
+                    eq(blockedUsers.userId, userId),
+                    inArray(blockedUsers.blockedUserId, otherUserIds),
+                ),
+                and(
+                    eq(blockedUsers.blockedUserId, userId),
+                    inArray(blockedUsers.userId, otherUserIds),
+                ),
+            ),
+        );
+
+    // Set of the *other* party in each blocking relationship.
+    return new Set(
+        rows.map((r) => (r.userId === userId ? r.blockedUserId : r.userId)),
+    );
 }
 
 export async function createBlock(userId, blockedUserId) {

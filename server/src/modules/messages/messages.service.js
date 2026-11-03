@@ -1,10 +1,53 @@
 import { AppError } from "../../lib/AppError.js";
 import * as repo from "./messages.repository.js";
 import { isBlocked } from "../blocked/blocked.repository.js";
-import { findChatById, getChatParticipantUserIds } from "../chats/chats.repository.js";
+import {
+    findChatById,
+    getChatParticipantUserIds,
+    findChatParticipants,
+    advanceLastReadAt,
+} from "../chats/chats.repository.js";
+import { broadcastToUser } from "../../ws/connectionRegistry.js";
+
+// Outbound-only, in addition to the normal message:new fan-out, so a client
+// can surface a mention distinctly. No EVENT_ROUTES entry needed.
+function notifyMentions(userIds, payload) {
+    for (const userId of userIds) {
+        broadcastToUser(userId, { type: "mention:new", payload });
+    }
+}
 
 export async function getMessages(chatId, pagination) {
     return repo.findMessages(chatId, pagination);
+}
+
+// Usernames are varchar(30) and alphanumeric/underscore (see auth.validation).
+// The lookbehind stops "foo@bar" and "@@x" from matching.
+const MENTION_RE = /(?<![\w@])@([a-zA-Z0-9_]{3,30})/g;
+
+/**
+ * Resolve @usernames against this chat's participants only — never a global
+ * username lookup, which would leak membership and let anyone be mentioned.
+ */
+async function syncMentions(messageId, chatId, content) {
+    const names = new Set(
+        [...(content || "").matchAll(MENTION_RE)].map((m) => m[1].toLowerCase()),
+    );
+
+    let userIds = [];
+    if (names.size > 0) {
+        const participants = await findChatParticipants(chatId);
+        userIds = participants
+            .filter((p) => names.has((p.username || "").toLowerCase()))
+            .map((p) => p.userId);
+    }
+
+    await repo.replaceMentions(messageId, userIds);
+    return userIds;
+}
+
+export async function searchMessages(userId, { q, chatId, before, limit }) {
+    return repo.searchMessages({ userId, chatId: chatId || null, query: q, before, limit });
 }
 
 export async function sendMessage(chatId, senderId, data) {
@@ -21,7 +64,7 @@ export async function sendMessage(chatId, senderId, data) {
         }
     }
 
-    return repo.createMessage({
+    const message = await repo.createMessage({
         chatId,
         senderId,
         type: data.type,
@@ -29,6 +72,15 @@ export async function sendMessage(chatId, senderId, data) {
         mediaId: data.mediaId || null,
         replyToMessageId: data.replyToMessageId || null,
     });
+
+    const mentionedUserIds = await syncMentions(message.id, chatId, data.content);
+    // Never notify yourself for mentioning yourself.
+    notifyMentions(
+        mentionedUserIds.filter((id) => id !== senderId),
+        { chatId, messageId: message.id, senderId },
+    );
+
+    return message;
 }
 
 export async function editMessage(messageId, userId, content) {
@@ -41,7 +93,10 @@ export async function editMessage(messageId, userId, content) {
         throw new AppError(400, "Cannot edit a deleted message", "MESSAGE_DELETED");
     }
 
-    return repo.updateMessage(messageId, { content, isEdited: true });
+    const updated = await repo.updateMessage(messageId, { content, isEdited: true });
+    // Re-sync so removing a mention in an edit actually removes it.
+    await syncMentions(messageId, message.chatId, content);
+    return updated;
 }
 
 export async function deleteMessage(messageId, userId) {
@@ -51,6 +106,9 @@ export async function deleteMessage(messageId, userId) {
         throw new AppError(403, "Can only delete your own messages", "FORBIDDEN");
     }
 
+    // Soft delete nulls the content, so drop the mention rows with it —
+    // otherwise a deleted message keeps contributing to mention badges.
+    await repo.replaceMentions(messageId, []);
     return repo.softDeleteMessage(messageId);
 }
 
@@ -67,4 +125,7 @@ export async function removeReaction(messageId, userId, reaction) {
 
 export async function markRead(chatId, messageIds, userId) {
     await repo.markRead(messageIds, userId);
+    // Advance the unread watermark in the same pass, so the sidebar badge
+    // clears without the client needing a second call.
+    await advanceLastReadAt(chatId, userId);
 }

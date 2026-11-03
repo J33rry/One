@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { useSocket } from "@/hooks/useSocket";
 import { useCallEvents } from "@/hooks/useCallEvents";
+import { useUnread } from "@/hooks/useUnread";
 import { IncomingCallModal } from "@/components/calls/IncomingCallModal";
 import { Avatar } from "@/components/ui/Avatar";
 import { usePresence } from "@/hooks/usePresence";
@@ -23,6 +24,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   // Wire WebSocket call events → Zustand call store
   useCallEvents();
+
+  // Derived from the chat list the sidebar already loads — no extra request.
+  const { totalUnread } = useUnread();
 
   const navItems = [
     { name: "Chats", href: "/", icon: MessageSquare },
@@ -68,6 +72,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   title={item.name}
                 >
                   <item.icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
+                  {item.href === "/" && totalUnread > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-black text-[10px] font-bold font-mono flex items-center justify-center shadow-md ring-2 ring-[var(--bg)]">
+                      {totalUnread > 99 ? "99+" : totalUnread}
+                    </span>
+                  )}
                   {isActive && (
                     <span className="absolute -left-2 w-1 h-4 bg-accent rounded-r-full shadow-[0_0_8px_var(--accent)]" />
                   )}
@@ -184,11 +193,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 key={item.name}
                 href={item.href}
                 className={clsx(
-                  "flex flex-col items-center justify-center w-16 py-1.5 rounded-2xl transition-all duration-300",
+                  "relative flex flex-col items-center justify-center w-16 py-1.5 rounded-2xl transition-all duration-300",
                   isActive ? "text-accent bg-accent/10" : "text-muted hover:text-fg hover:bg-surface-3/30"
                 )}
               >
                 <item.icon className={clsx("w-5 h-5 mb-1 transition-transform", isActive && "scale-110")} />
+                {item.href === "/" && totalUnread > 0 && (
+                  <span className="absolute top-0.5 right-3 min-w-[16px] h-4 px-1 rounded-full bg-accent text-black text-[9px] font-bold font-mono flex items-center justify-center">
+                    {totalUnread > 99 ? "99+" : totalUnread}
+                  </span>
+                )}
                 <span className="text-[10px] font-medium tracking-wide">{item.name}</span>
               </Link>
             );

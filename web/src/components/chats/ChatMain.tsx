@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { chatsApi } from "@/lib/api/chats";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, Info, Phone, Video, ArrowLeft, Settings, ShieldCheck } from "lucide-react";
+import { Loader2, Info, Phone, Video, ArrowLeft, Settings, ShieldCheck, Search } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { formatLastSeen } from "@/lib/utils/presence";
@@ -15,6 +15,9 @@ import { ChatSettingsModal } from "./ChatSettingsModal";
 import { Avatar } from "@/components/ui/Avatar";
 import { usePresence } from "@/hooks/usePresence";
 import { Badge } from "@/components/ui/Badge";
+import { ChatMediaPanel } from "./ChatMediaPanel";
+import { MediaLightbox } from "@/components/ui/MediaLightbox";
+import { MessageSearchPanel } from "./MessageSearchPanel";
 import clsx from "clsx";
 
 interface ChatMainProps {
@@ -26,6 +29,11 @@ export function ChatMain({ chatId }: ChatMainProps) {
   const { isOnline, getLastSeen } = usePresence();
   const [showInfo, setShowInfo] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [infoLightbox, setInfoLightbox] = useState<{
+    url: string;
+    type: "image" | "video";
+  } | null>(null);
   const { callState, activeCall, livekitToken, livekitUrl, startCall } = useCallStore();
 
   const isInCall = (callState === "connecting" || callState === "connected") && activeCall?.chatId === chatId;
@@ -62,6 +70,18 @@ export function ChatMain({ chatId }: ChatMainProps) {
 
   const otherUserOnline = !isGroup && otherParticipant ? isOnline(otherParticipant.id) : false;
   const otherUserLastSeen = !isGroup && otherParticipant ? (getLastSeen(otherParticipant.id) || otherParticipant.lastSeenAt) : null;
+
+  const memberCount = chat.participants?.length || 0;
+  const onlineCount = chat.participants?.filter((p) => isOnline(p.userId)).length || 0;
+
+  // Online members first, then admins, then by name.
+  const sortedParticipants = [...(chat.participants || [])].sort((a, b) => {
+    const aOnline = isOnline(a.userId);
+    const bOnline = isOnline(b.userId);
+    if (aOnline !== bOnline) return aOnline ? -1 : 1;
+    if ((a.role === "admin") !== (b.role === "admin")) return a.role === "admin" ? -1 : 1;
+    return (a.user?.displayName || "").localeCompare(b.user?.displayName || "");
+  });
 
   return (
     <div className="flex-1 flex flex-col h-full bg-transparent relative overflow-hidden">
@@ -103,7 +123,10 @@ export function ChatMain({ chatId }: ChatMainProps) {
             </h2>
             <p className="text-[11px] font-medium mt-0.5">
               {isGroup ? (
-                <span className="text-muted">{chat.participants?.length || 0} members</span>
+                <span className="text-muted">
+                  {memberCount} member{memberCount === 1 ? "" : "s"}
+                  {onlineCount > 0 && `, ${onlineCount} online`}
+                </span>
               ) : otherUserOnline ? (
                 <span className="text-accent font-medium flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shadow-[0_0_8px_var(--accent)]" />
@@ -136,6 +159,21 @@ export function ChatMain({ chatId }: ChatMainProps) {
           </button>
           <div className="w-px h-6 bg-border mx-1" />
           <button
+            onClick={() => {
+              setShowSearch(true);
+              setShowInfo(false);
+            }}
+            className={clsx(
+              "p-2.5 rounded-xl transition-all duration-300",
+              showSearch
+                ? "text-accent bg-accent/10 border border-accent/20"
+                : "text-muted hover:text-fg hover:bg-surface-3/50"
+            )}
+            title="Search in conversation"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+          <button
             onClick={() => setShowSettings(true)}
             className="p-2.5 rounded-xl text-muted hover:text-fg hover:bg-surface-3/50 transition-all duration-300"
             title="Chat Settings"
@@ -143,7 +181,7 @@ export function ChatMain({ chatId }: ChatMainProps) {
             <Settings className="w-5 h-5" />
           </button>
           <button
-            onClick={() => setShowInfo(!showInfo)}
+            onClick={() => { setShowInfo(!showInfo); setShowSearch(false); }}
             className={clsx(
               "p-2.5 rounded-xl transition-all duration-300",
               showInfo ? "text-accent bg-accent/10 border border-accent/20 shadow-[0_0_15px_rgba(211,161,94,0.2)]" : "text-muted hover:text-fg hover:bg-surface-3/50"
@@ -203,12 +241,26 @@ export function ChatMain({ chatId }: ChatMainProps) {
             </div>
 
             <div>
+              <h4 className="text-[10px] font-mono font-bold text-muted uppercase tracking-widest mb-3">
+                Shared
+              </h4>
+              <ChatMediaPanel
+                chatId={chatId}
+                enabled={showInfo}
+                onOpenMedia={(url, type) => setInfoLightbox({ url, type })}
+              />
+            </div>
+
+            <div>
               <h4 className="text-[10px] font-mono font-bold text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
-                Participants 
-                <span className="bg-surface-3/50 text-fg px-2 py-0.5 rounded-full">{chat.participants?.length || 0}</span>
+                Participants
+                <span className="bg-surface-3/50 text-fg px-2 py-0.5 rounded-full">
+                  {memberCount}
+                  {onlineCount > 0 && ` · ${onlineCount} online`}
+                </span>
               </h4>
               <ul className="space-y-2">
-                {chat.participants?.map((p) => {
+                {sortedParticipants.map((p) => {
                   const pUser = p.user;
                   const isUserOnline = isOnline(p.userId);
 
@@ -244,10 +296,22 @@ export function ChatMain({ chatId }: ChatMainProps) {
         </div>
       )}
 
+      {/* In-conversation search */}
+      {showSearch && (
+        <MessageSearchPanel chatId={chatId} onClose={() => setShowSearch(false)} />
+      )}
+
       {/* Settings Modal */}
       {showSettings && (
         <ChatSettingsModal chatId={chatId} onClose={() => setShowSettings(false)} />
       )}
+
+      {/* Lightbox for media opened from the Shared panel */}
+      <MediaLightbox
+        src={infoLightbox?.url || null}
+        type={infoLightbox?.type || "image"}
+        onClose={() => setInfoLightbox(null)}
+      />
     </div>
   );
 }

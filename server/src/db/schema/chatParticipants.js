@@ -2,6 +2,7 @@ import {
     pgTable,
     uuid,
     varchar,
+    boolean,
     timestamp,
     index,
     unique,
@@ -24,10 +25,21 @@ export const chatParticipants = pgTable(
         joinedAt: timestamp("joined_at", { withTimezone: true })
             .notNull()
             .defaultNow(),
+        // Per-user chat state. These live here, not on `chats`, so one member
+        // pinning a group does not pin it for everyone else.
+        lastReadAt: timestamp("last_read_at", { withTimezone: true }),
+        pinnedAt: timestamp("pinned_at", { withTimezone: true }),
+        archivedAt: timestamp("archived_at", { withTimezone: true }),
+        isMuted: boolean("is_muted").notNull().default(false),
     },
     (table) => [
         index("idx_chat_participants_chat").on(table.chatId),
         index("idx_chat_participants_user").on(table.userId),
+        index("idx_chat_participants_user_state").on(
+            table.userId,
+            table.archivedAt,
+            table.pinnedAt,
+        ),
         unique().on(table.chatId, table.userId),
     ],
 );

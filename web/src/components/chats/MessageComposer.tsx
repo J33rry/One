@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { messagesApi } from "@/lib/api/messages";
 import { mediaApi } from "@/lib/api/media";
+import { chatsApi, ChatParticipant } from "@/lib/api/chats";
+import { useAuth } from "@/hooks/useAuth";
+import { Avatar } from "@/components/ui/Avatar";
 import { Paperclip, Send, Loader2, X, File as FileIcon, Check, Smile, ArrowUp } from "lucide-react";
 import { useTyping } from "@/hooks/useTyping";
 import { useMessageActions } from "@/hooks/useMessageActions";
@@ -23,12 +26,40 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Mention autocomplete. `mentionAnchor` is the index of the '@' being typed.
+  const [mentionAnchor, setMentionAnchor] = useState<number | null>(null);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionIndex, setMentionIndex] = useState(0);
+
   const queryClient = useQueryClient();
   const { sendTypingStart } = useTyping(chatId);
   const { editingMessage, replyingToMessage, clearActions } = useMessageActions();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { user: currentUser } = useAuth();
+
+  // Already warm — ChatMain fetches this on the same key.
+  const { data: chatData } = useQuery({
+    queryKey: ["chats", chatId],
+    queryFn: () => chatsApi.getChatDetails(chatId),
+  });
+
+  // Only this chat's participants can be mentioned, matching the server.
+  const mentionCandidates: ChatParticipant[] =
+    mentionAnchor === null
+      ? []
+      : (chatData?.chat?.participants || [])
+          .filter((p) => p.userId !== currentUser?.id)
+          .filter((p) => {
+            const q = mentionQuery.toLowerCase();
+            if (!q) return true;
+            return (
+              (p.user?.username || "").toLowerCase().startsWith(q) ||
+              (p.user?.displayName || "").toLowerCase().includes(q)
+            );
+          })
+          .slice(0, 6);
 
   useEffect(() => {
     if (editingMessage) {
@@ -185,6 +216,33 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // The mention popover must claim these keys BEFORE the Enter-to-send
+    // branch below, or picking a suggestion would send a half-typed mention.
+    if (mentionCandidates.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setMentionIndex((i) => (i + 1) % mentionCandidates.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setMentionIndex(
+          (i) => (i - 1 + mentionCandidates.length) % mentionCandidates.length,
+        );
+        return;
+      }
+      if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        applyMention(mentionCandidates[mentionIndex]);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setMentionAnchor(null);
+        return;
+      }
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
@@ -192,8 +250,40 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value);
+    const value = e.target.value;
+    setContent(value);
     sendTypingStart();
+
+    // Detect an in-progress @mention immediately left of the caret.
+    const caret = e.target.selectionStart ?? value.length;
+    const match = /(?:^|[^\w@])@([a-zA-Z0-9_]*)$/.exec(value.slice(0, caret));
+    if (match) {
+      setMentionAnchor(caret - match[1].length - 1);
+      setMentionQuery(match[1]);
+      setMentionIndex(0);
+    } else {
+      setMentionAnchor(null);
+    }
+  };
+
+  const applyMention = (p: ChatParticipant) => {
+    if (mentionAnchor === null) return;
+    const username = p.user?.username;
+    if (!username) return;
+
+    const caret = textareaRef.current?.selectionStart ?? content.length;
+    const next =
+      content.slice(0, mentionAnchor) + `@${username} ` + content.slice(caret);
+
+    setContent(next);
+    setMentionAnchor(null);
+
+    // Put the caret just after the inserted mention.
+    const pos = mentionAnchor + username.length + 2;
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+      textareaRef.current?.setSelectionRange(pos, pos);
+    });
   };
 
   const handleEmojiSelect = (emojiData: EmojiClickData) => {
@@ -346,6 +436,44 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
           >
             <Smile className="w-5 h-5" />
           </button>
+
+          {mentionCandidates.length > 0 && (
+            <div className="absolute bottom-full left-0 mb-2 w-64 py-1 rounded-2xl glass-panel border border-border shadow-2xl z-40 overflow-hidden">
+              {mentionCandidates.map((p, i) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  // onMouseDown, not onClick: onClick fires after the textarea
+                  // blurs and the popover has already closed.
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    applyMention(p);
+                  }}
+                  onMouseEnter={() => setMentionIndex(i)}
+                  className={clsx(
+                    "w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors",
+                    i === mentionIndex
+                      ? "bg-accent/15 text-fg"
+                      : "text-muted hover:bg-surface-3/40",
+                  )}
+                >
+                  <Avatar
+                    src={p.user?.avatarUrl}
+                    name={p.user?.displayName || p.user?.username}
+                    size="sm"
+                  />
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-xs font-semibold text-fg truncate">
+                      {p.user?.displayName}
+                    </span>
+                    <span className="block text-[10px] text-muted truncate">
+                      @{p.user?.username}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
 
           <textarea
             ref={textareaRef}

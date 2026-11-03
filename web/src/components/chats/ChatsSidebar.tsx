@@ -1,20 +1,65 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { chatsApi, Chat } from "@/lib/api/chats";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { chatsApi, Chat, ChatPreferences } from "@/lib/api/chats";
 import { Message } from "@/lib/api/messages";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { Plus, Search, MessageSquarePlus } from "lucide-react";
+import {
+  Plus,
+  Search,
+  MessageSquarePlus,
+  Pin,
+  PinOff,
+  Archive,
+  ArchiveRestore,
+  Bell,
+  BellOff,
+  MoreVertical,
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NewChatModal } from "./NewChatModal";
+import { ChatFoldersRail } from "./ChatFoldersRail";
+import { FolderManagerModal } from "./FolderManagerModal";
+import { searchApi } from "@/lib/api/search";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Avatar } from "@/components/ui/Avatar";
 import { usePresence } from "@/hooks/usePresence";
 import { useSocketEvent } from "@/hooks/useSocket";
 import { ChatListSkeleton } from "@/components/ui/Skeleton";
+
+// The server marks matches with « » sentinels, so this is a plain split.
+function SearchSnippet({ text }: { text: string }) {
+  const parts = text.split(/«([^»]*)»/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        i % 2 === 1 ? (
+          <mark key={i} className="bg-accent/25 text-accent rounded px-0.5">
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </>
+  );
+}
+
+// Mirrors the server's ordering: pinned first, then most recently active.
+function byPinnedThenRecent(a: Chat, b: Chat) {
+  const ap = a.pinnedAt ? new Date(a.pinnedAt).getTime() : null;
+  const bp = b.pinnedAt ? new Date(b.pinnedAt).getTime() : null;
+  if (ap !== bp) {
+    if (ap === null) return 1;
+    if (bp === null) return -1;
+    return bp - ap;
+  }
+  return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+}
 
 export function ChatsSidebar() {
   const pathname = usePathname();
@@ -23,17 +68,72 @@ export function ChatsSidebar() {
   const queryClient = useQueryClient();
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"all" | "dm" | "group">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "dm" | "group" | "archived">("all");
+  const [menuChatId, setMenuChatId] = useState<string | null>(null);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [isFoldersOpen, setIsFoldersOpen] = useState(false);
+
+  const showArchived = activeTab === "archived";
 
   const { data, isLoading } = useQuery({
-    queryKey: ["chats"],
-    queryFn: () => chatsApi.getChats(),
+    queryKey: showArchived ? ["chats", { archived: true }] : ["chats"],
+    queryFn: () => chatsApi.getChats(showArchived ? { archived: true } : undefined),
   });
+
+  // Global message search, alongside the instant client-side title filter.
+  const debouncedSearch = useDebouncedValue(searchQuery.trim(), 300);
+  const { data: searchData, isFetching: isSearchingMessages } = useQuery({
+    queryKey: ["search", "global", debouncedSearch],
+    queryFn: () => searchApi.messages(debouncedSearch),
+    enabled: debouncedSearch.length >= 2,
+  });
+  const messageResults = searchData?.results || [];
+
+  const prefsMutation = useMutation({
+    mutationFn: ({ chatId, prefs }: { chatId: string; prefs: ChatPreferences }) =>
+      chatsApi.updateChatPreferences(chatId, prefs),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
+    },
+  });
+
+  const setPref = (chatId: string, prefs: ChatPreferences) => {
+    setMenuChatId(null);
+    prefsMutation.mutate({ chatId, prefs });
+  };
+
+  // Other devices of this user changed a chat's pin/archive/mute state.
+  useSocketEvent("chat:preferences", () => {
+    queryClient.invalidateQueries({ queryKey: ["chats"] });
+  });
+
+  // Opening a chat marks it read server-side (MessageList), so clear the badge
+  // straight away rather than waiting for the next list refetch.
+  const openChatId = pathname.startsWith("/chats/")
+    ? pathname.slice("/chats/".length)
+    : null;
+
+  useEffect(() => {
+    if (!openChatId) return;
+    queryClient.setQueryData(["chats"], (oldData: { chats: Chat[] } | undefined) => {
+      if (!oldData?.chats) return oldData;
+      if (!oldData.chats.some((c) => c.id === openChatId && (c.unreadCount || 0) > 0)) {
+        return oldData;
+      }
+      return {
+        ...oldData,
+        chats: oldData.chats.map((c) =>
+          c.id === openChatId ? { ...c, unreadCount: 0 } : c,
+        ),
+      };
+    });
+  }, [openChatId, queryClient, data]);
 
   useSocketEvent<Message>("message:new", (newMessage) => {
     queryClient.setQueryData(["chats"], (oldData: { chats: Chat[] } | undefined) => {
       if (!oldData?.chats) return oldData;
       let found = false;
+      const isOpen = pathname === `/chats/${newMessage.chatId}`;
       const updatedChats = oldData.chats.map((c: Chat) => {
         if (c.id === newMessage.chatId) {
           found = true;
@@ -41,6 +141,10 @@ export function ChatsSidebar() {
             ...c,
             latestMessage: newMessage,
             updatedAt: newMessage.createdAt || new Date().toISOString(),
+            // The open chat marks itself read, so only bump the others.
+            unreadCount: isOpen
+              ? c.unreadCount || 0
+              : (c.unreadCount || 0) + 1,
           };
         }
         return c;
@@ -51,10 +155,7 @@ export function ChatsSidebar() {
         return oldData;
       }
 
-      updatedChats.sort(
-        (a: Chat, b: Chat) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      );
+      updatedChats.sort(byPinnedThenRecent);
       return { ...oldData, chats: updatedChats };
     });
   });
@@ -88,6 +189,10 @@ export function ChatsSidebar() {
   const filteredChats = chats.filter((chat) => {
     if (activeTab === "dm" && chat.type !== "dm") return false;
     if (activeTab === "group" && chat.type !== "group") return false;
+    // The archived tab queries its own list, so no extra filtering here.
+    if (activeFolderId && !(chat.folderIds || []).includes(activeFolderId)) {
+      return false;
+    }
 
     if (!searchQuery.trim()) return true;
     const title = renderChatTitle(chat).toLowerCase();
@@ -111,6 +216,7 @@ export function ChatsSidebar() {
       </div>
 
       <NewChatModal isOpen={isNewChatOpen} onClose={() => setIsNewChatOpen(false)} />
+      <FolderManagerModal isOpen={isFoldersOpen} onClose={() => setIsFoldersOpen(false)} />
 
       {/* Search Input & Tabs */}
       <div className="p-4 shrink-0 space-y-4 z-10 bg-surface/40 backdrop-blur-md">
@@ -124,6 +230,16 @@ export function ChatsSidebar() {
           />
           <Search className="absolute left-3.5 top-3 w-4 h-4 text-muted group-focus-within:text-accent transition-colors pointer-events-none" />
         </div>
+
+        {/* Folder rail — a second filter dimension above the type tabs */}
+        {!showArchived && (
+          <ChatFoldersRail
+            activeFolderId={activeFolderId}
+            onSelect={setActiveFolderId}
+            onManage={() => setIsFoldersOpen(true)}
+            totalUnread={chats.reduce((s, c) => s + (c.unreadCount || 0), 0)}
+          />
+        )}
 
         {/* Segmented Tabs */}
         <div className="flex bg-surface-2/60 p-1 rounded-xl border border-border text-xs font-medium backdrop-blur-lg">
@@ -154,6 +270,16 @@ export function ChatsSidebar() {
           >
             Groups
           </button>
+          <button
+            onClick={() => setActiveTab("archived")}
+            title="Archived chats"
+            className={clsx(
+              "flex-1 py-1.5 rounded-lg transition-all duration-300 flex items-center justify-center",
+              activeTab === "archived" ? "bg-surface text-fg shadow-sm border border-border" : "text-muted hover:text-fg"
+            )}
+          >
+            <Archive className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
@@ -168,9 +294,13 @@ export function ChatsSidebar() {
               const title = renderChatTitle(chat);
               const isGroup = chat.type === "group";
               const otherUser = getOtherParticipant(chat);
+              const unread = chat.unreadCount || 0;
+              const mentions = chat.mentionCount || 0;
+              const isPinned = !!chat.pinnedAt;
+              const isArchived = !!chat.archivedAt;
 
               return (
-                <li key={chat.id}>
+                <li key={chat.id} className="relative group">
                   <Link
                     href={`/chats/${chat.id}`}
                     className={clsx(
@@ -193,27 +323,145 @@ export function ChatsSidebar() {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-baseline mb-1">
                         <p className={clsx(
-                          "text-sm font-semibold truncate transition-colors",
-                          isActive ? "text-fg" : "text-fg group-hover:text-fg"
+                          "text-sm truncate transition-colors flex items-center gap-1.5",
+                          unread > 0 ? "font-bold text-fg" : "font-semibold text-fg"
                         )}>
-                          {title}
+                          {isPinned && (
+                            <Pin className="w-3 h-3 shrink-0 text-accent rotate-45" />
+                          )}
+                          {chat.isMuted && (
+                            <BellOff className="w-3 h-3 shrink-0 opacity-50" />
+                          )}
+                          <span className="truncate">{title}</span>
                         </p>
                         <span className="text-[10px] font-mono whitespace-nowrap ml-2 opacity-70">
                           {formatDistanceToNow(new Date(chat.updatedAt), { addSuffix: false })}
                         </span>
                       </div>
-                      <p className="text-xs truncate opacity-80">
-                        {getMessagePreview(chat.latestMessage) || (
-                          <span className="italic opacity-50">No messages yet</span>
+                      <div className="flex items-center gap-2">
+                        <p className={clsx(
+                          "text-xs truncate flex-1",
+                          unread > 0 ? "opacity-100 font-medium" : "opacity-80"
+                        )}>
+                          {getMessagePreview(chat.latestMessage) || (
+                            <span className="italic opacity-50">No messages yet</span>
+                          )}
+                        </p>
+                        {/* A mention cuts through a muted chat, so it gets its
+                            own accent marker regardless of mute state. */}
+                        {mentions > 0 && (
+                          <span
+                            className="shrink-0 w-5 h-5 rounded-full bg-accent text-black text-[11px] font-bold flex items-center justify-center shadow-sm"
+                            title={`${mentions} mention${mentions === 1 ? "" : "s"}`}
+                          >
+                            @
+                          </span>
                         )}
-                      </p>
+                        {unread > 0 && (
+                          <span
+                            className={clsx(
+                              "shrink-0 min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold font-mono",
+                              "flex items-center justify-center",
+                              chat.isMuted && mentions === 0
+                                ? "bg-surface-3 text-muted"
+                                : "bg-accent text-black shadow-sm"
+                            )}
+                          >
+                            {unread > 99 ? "99+" : unread}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </Link>
+
+                  {/* Pin / archive / mute. Outside the Link so clicks don't navigate. */}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setMenuChatId(menuChatId === chat.id ? null : chat.id);
+                    }}
+                    className={clsx(
+                      "absolute right-2 top-2 p-1.5 rounded-lg transition-all z-10",
+                      "text-muted hover:text-fg hover:bg-surface-3/60",
+                      menuChatId === chat.id ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    )}
+                    title="Chat options"
+                  >
+                    <MoreVertical className="w-3.5 h-3.5" />
+                  </button>
+
+                  {menuChatId === chat.id && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-20"
+                        onClick={() => setMenuChatId(null)}
+                      />
+                      <div className="absolute right-2 top-9 z-30 w-44 py-1 rounded-xl glass-panel border border-border shadow-2xl text-xs">
+                        <button
+                          onClick={() => setPref(chat.id, { pinned: !isPinned })}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-muted hover:text-fg hover:bg-surface-3/40 transition-colors"
+                        >
+                          {isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+                          {isPinned ? "Unpin" : "Pin to top"}
+                        </button>
+                        <button
+                          onClick={() => setPref(chat.id, { muted: !chat.isMuted })}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-muted hover:text-fg hover:bg-surface-3/40 transition-colors"
+                        >
+                          {chat.isMuted ? <Bell className="w-3.5 h-3.5" /> : <BellOff className="w-3.5 h-3.5" />}
+                          {chat.isMuted ? "Unmute" : "Mute"}
+                        </button>
+                        <button
+                          onClick={() => setPref(chat.id, { archived: !isArchived })}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-muted hover:text-fg hover:bg-surface-3/40 transition-colors"
+                        >
+                          {isArchived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
+                          {isArchived ? "Unarchive" : "Archive"}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </li>
               );
             })}
 
-            {filteredChats.length === 0 && (
+            {/* Server-side message matches, below the chat-name matches */}
+            {searchQuery.trim().length >= 2 && (
+              <li className="pt-3">
+                <p className="px-3 pb-1.5 text-[10px] font-mono uppercase tracking-widest text-faint">
+                  Messages
+                </p>
+                {messageResults.length === 0 ? (
+                  <p className="px-3 py-2 text-xs text-faint italic">
+                    {isSearchingMessages ? "Searching…" : "No message matches."}
+                  </p>
+                ) : (
+                  <ul className="space-y-0.5">
+                    {messageResults.map((r) => (
+                      <li key={r.id}>
+                        <Link
+                          href={`/chats/${r.chatId}`}
+                          className="block px-3 py-2 rounded-xl hover:bg-surface-2/40 transition-colors"
+                        >
+                          <p className="text-[11px] font-semibold text-fg truncate">
+                            {r.sender.displayName}
+                            <span className="text-accent font-normal">
+                              {" · "}
+                              {r.chatName || "Direct message"}
+                            </span>
+                          </p>
+                          <p className="text-[11px] text-muted truncate">
+                            <SearchSnippet text={r.snippet || r.content || ""} />
+                          </p>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            )}
+
+            {filteredChats.length === 0 && searchQuery.trim().length < 2 && (
               <div className="p-8 text-center space-y-4 animate-in-slide mt-10">
                 <div className="w-16 h-16 rounded-full glass-panel flex items-center justify-center mx-auto text-muted">
                   <MessageSquarePlus className="w-8 h-8" />
