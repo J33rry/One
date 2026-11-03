@@ -10,9 +10,15 @@ import { useState } from "react";
 import Link from "next/link";
 import { AUTH_QUERY_KEY } from "@/hooks/useAuth";
 import { GoogleLogin } from "@react-oauth/google";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Mail, Lock, User, AtSign, AlertCircle } from "lucide-react";
+import { Mail, Lock, User, AtSign } from "lucide-react";
+import {
+  PebbleButton,
+  PebbleDivider,
+  PebbleError,
+  PebbleField,
+  PebbleHeading,
+  pebbleLinkClass,
+} from "@/components/login/PebbleAuth";
 
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters").max(30),
@@ -64,75 +70,58 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center space-y-1.5">
-        <h2 className="font-display text-2xl font-semibold text-fg tracking-tight">Create an account</h2>
-        <p className="text-xs text-muted">Get started with secure end-to-end messaging.</p>
-      </div>
+    <>
+      <PebbleHeading title="Create an account" subtitle="Start your first conversation on pebble" />
+      <PebbleError message={errorMsg} />
 
-      {errorMsg && (
-        <div className="p-3.5 rounded-lg bg-danger/10 border border-danger/25 text-danger text-xs flex items-center gap-2.5">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{errorMsg}</span>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5">
-        <Input
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5" noValidate>
+        <PebbleField
           {...register("email")}
-          label="Email address"
+          label="Email"
+          icon={Mail}
           type="email"
+          autoComplete="email"
           placeholder="you@example.com"
-          leftIcon={<Mail className="w-4 h-4" />}
           error={errors.email?.message}
         />
 
-        <Input
-          {...register("username")}
-          label="Username"
-          type="text"
-          placeholder="username"
-          leftIcon={<AtSign className="w-4 h-4" />}
-          error={errors.username?.message}
-        />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <PebbleField
+            {...register("username")}
+            label="Username"
+            icon={AtSign}
+            type="text"
+            autoComplete="username"
+            placeholder="username"
+            error={errors.username?.message}
+          />
+          <PebbleField
+            {...register("displayName")}
+            label="Display name"
+            icon={User}
+            type="text"
+            autoComplete="name"
+            placeholder="Jane Doe"
+            error={errors.displayName?.message}
+          />
+        </div>
 
-        <Input
-          {...register("displayName")}
-          label="Display Name"
-          type="text"
-          placeholder="Jane Doe"
-          leftIcon={<User className="w-4 h-4" />}
-          error={errors.displayName?.message}
-        />
-
-        <Input
+        <PebbleField
           {...register("password")}
           label="Password"
+          icon={Lock}
           type="password"
+          autoComplete="new-password"
           placeholder="At least 8 characters"
-          leftIcon={<Lock className="w-4 h-4" />}
           error={errors.password?.message}
         />
 
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          className="w-full mt-2"
-          isLoading={mutation.isPending}
-        >
-          Sign up
-        </Button>
+        <div className="pt-2">
+          <PebbleButton loading={mutation.isPending}>Create account</PebbleButton>
+        </div>
       </form>
 
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-[10px] tracking-[0.2em] uppercase font-mono">
-          <span className="px-3 bg-surface text-faint">Or continue with</span>
-        </div>
-      </div>
+      <PebbleDivider />
 
       <div className="flex justify-center">
         <GoogleLogin
@@ -144,20 +133,18 @@ export default function RegisterPage() {
           onError={() => {
             setErrorMsg("Google Sign-In failed");
           }}
-          theme="filled_black"
-          shape="rectangular"
+          text="signup_with"
+          theme="outline"
+          shape="pill"
         />
       </div>
 
-      <div className="text-center text-xs text-muted pt-2">
-        Already have an account?{" "}
-        <Link
-          href="/login"
-          className="font-semibold text-accent hover:text-accent-hover transition-colors"
-        >
+      <p className="mt-8 text-center text-[15px] text-[#5d5a70]">
+        Already on pebble?{" "}
+        <Link href="/login" className={pebbleLinkClass}>
           Sign in
         </Link>
-      </div>
-    </div>
+      </p>
+    </>
   );
 }
