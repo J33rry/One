@@ -1,9 +1,8 @@
 import { broadcastToChat, broadcastToUser } from "../connectionRegistry.js";
 import { findCallById } from "../../modules/calls/calls.repository.js";
 
-export async function handleCallEvent(ws, event) {
-    const { type, payload } = event;
-    const userId = ws.userId;
+export async function handleCallEvent(socket, type, payload) {
+    const userId = socket.data.userId;
 
     switch (type) {
         case "call:incoming": {

@@ -1,9 +1,8 @@
 import { broadcastToChat } from "../connectionRegistry.js";
 import * as messagesService from "../../modules/messages/messages.service.js";
 
-export async function handleMessageEvent(ws, event) {
-    const { type, payload } = event;
-    const userId = ws.userId;
+export async function handleMessageEvent(socket, type, payload) {
+    const userId = socket.data.userId;
 
     switch (type) {
         case "message:new": {
@@ -13,7 +12,7 @@ export async function handleMessageEvent(ws, event) {
                 payload,
             );
             broadcastToChat(payload.chatId, { type: "message:new", payload: message }, userId);
-            ws.send(JSON.stringify({ type: "message:new:ack", payload: message }));
+            socket.emit("message:new:ack", message);
             break;
         }
 

@@ -42,7 +42,7 @@ Direct & group chat · audio/video calls · presence · typing indicators · med
 | | |
 |---|---|
 | 💬 **Messaging** | 1:1 and group chats — edit, delete, replies, reactions, read/delivery status |
-| ⚡ **Real-time** | WebSocket gateway for live messages, presence (online / last-seen) & typing indicators |
+| ⚡ **Real-time** | Socket.IO gateway for live messages, presence (online / last-seen) & typing indicators |
 | 📞 **Calls** | Audio & video powered by [LiveKit](https://livekit.io) |
 | 🖼️ **Media** | Image / video / file sharing via [Cloudinary](https://cloudinary.com), with an in-app lightbox |
 | 👥 **Contacts** | Send / accept / reject requests, block & unblock users |
@@ -59,7 +59,7 @@ Direct & group chat · audio/video calls · presence · typing indicators · med
 
 **⚙️ Backend**
 
-`Node.js` · `Express 5` · `Drizzle ORM` · `PostgreSQL` · `Redis` (`express-session` + `connect-redis`) · `ws` gateway · `LiveKit server SDK` · `Cloudinary` · `Argon2` · `Zod`
+`Node.js` · `Express 5` · `Drizzle ORM` · `PostgreSQL` · `Redis` (`express-session` + `connect-redis`) · `Socket.IO` gateway · `LiveKit server SDK` · `Cloudinary` · `Argon2` · `Zod`
 
 ---
 
@@ -67,15 +67,15 @@ Direct & group chat · audio/video calls · presence · typing indicators · med
 
 ```
 .
-├── 📁 server/                 # Express API + WebSocket gateway
-│   ├── index.js               # Entry: middleware, session, routes, WS server
+├── 📁 server/                 # Express API + Socket.IO gateway
+│   ├── index.js               # Entry: middleware, session, routes, Socket.IO server
 │   ├── docker-compose.yml     # Local Postgres + Redis + LiveKit
 │   └── src/
 │       ├── config/            # ⚙️  Env schema & validation
 │       ├── db/                # 🗄️  Drizzle schema + migrations
 │       ├── middleware/        # 🛡️  requireAuth, access control, errors
 │       ├── modules/           # 🧩  auth · users · contacts · blocked · chats · messages · media · calls
-│       └── ws/                # 🔌  WebSocket handlers (message · call · presence · typing)
+│       └── ws/                # 🔌  Socket.IO handlers (message · call · presence · typing)
 │
 └── 📁 web/                    # Next.js frontend
     └── src/
@@ -150,7 +150,7 @@ npm run dev               # ▶ http://localhost:3000
 | Key | Description |
 |---|---|
 | `NEXT_PUBLIC_API_URL` | API base URL **including** `/api/v1` — e.g. `http://localhost:3002/api/v1` |
-| `NEXT_PUBLIC_WEBSOCKET_URL` | WS base URL **without** a path — e.g. `http://localhost:3002` <br/>_(the client converts `http→ws` and appends `/ws`)_ |
+| `NEXT_PUBLIC_WEBSOCKET_URL` | Socket.IO server origin **without** a path — e.g. `http://localhost:3002` <br/>_(the client connects over the `/ws` Socket.IO path)_ |
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Google OAuth client ID |
 
 > ⚠️ `NEXT_PUBLIC_*` values are inlined at build time — **rebuild/redeploy** after changing them.

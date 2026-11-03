@@ -1,61 +1,75 @@
 import { getChatParticipantUserIds } from "../modules/chats/chats.repository.js";
 
-// In-memory connection registry: userId → Set<WebSocket>
-// Supports multi-device: one user can have multiple active sockets.
+// Delivery runs through Socket.IO rooms: every socket joins `user:<userId>`,
+// so a user with several devices is addressed by one room name.
 //
-// For horizontal scaling (multiple server instances), replace this with
-// Redis pub/sub: publish events to a channel per userId, and each server
-// instance subscribes to channels for its connected users. This module
-// becomes a thin adapter that publishes to Redis instead of sending
-// directly, and a subscriber loop delivers to local sockets.
+// The userSockets index below exists only to answer presence questions
+// (isOnline / getOnlineUserIds) synchronously, which the adapter cannot do.
+//
+// For horizontal scaling (multiple server instances), swap the default
+// in-memory adapter for @socket.io/redis-adapter: room emits then fan out
+// across instances with no change to the functions below. Presence would
+// move to a shared Redis set at that point.
 
-const connections = new Map();
+let io = null;
+const userSockets = new Map();
 
-export function addConnection(userId, ws) {
-    if (!connections.has(userId)) {
-        connections.set(userId, new Set());
-    }
-    connections.get(userId).add(ws);
+export const userRoom = (userId) => `user:${userId}`;
+
+export function setIoServer(ioServer) {
+    io = ioServer;
 }
 
-export function removeConnection(userId, ws) {
-    const sockets = connections.get(userId);
-    if (!sockets) return;
-    sockets.delete(ws);
-    if (sockets.size === 0) connections.delete(userId);
+export function addConnection(userId, socket) {
+    socket.join(userRoom(userId));
+    if (!userSockets.has(userId)) {
+        userSockets.set(userId, new Set());
+    }
+    userSockets.get(userId).add(socket.id);
+}
+
+export function removeConnection(userId, socket) {
+    const socketIds = userSockets.get(userId);
+    if (!socketIds) return;
+    socketIds.delete(socket.id);
+    if (socketIds.size === 0) userSockets.delete(userId);
 }
 
 export function getConnections(userId) {
-    return connections.get(userId) || new Set();
+    return userSockets.get(userId) || new Set();
 }
 
 export function isOnline(userId) {
-    return connections.has(userId) && connections.get(userId).size > 0;
+    return getConnections(userId).size > 0;
 }
 
 export function broadcastToUser(userId, event) {
-    const sockets = getConnections(userId);
-    const data = JSON.stringify(event);
-    for (const ws of sockets) {
-        if (ws.readyState === 1) ws.send(data);
-    }
+    if (!io) return;
+    io.to(userRoom(userId)).emit(event.type, event.payload);
 }
 
 // Fan-out to all participants of a chat except the sender.
 // Fetches participant list from DB so it's always current.
+//
+// Delivery is best-effort: most callers fire this without awaiting, so a
+// rejection here would surface as an unhandled rejection and take the
+// process down. Failures are logged and swallowed instead.
 export async function broadcastToChat(chatId, event, excludeUserId) {
-    const participantIds = await getChatParticipantUserIds(chatId);
-    const data = JSON.stringify(event);
+    if (!io) return;
+    try {
+        const participantIds = await getChatParticipantUserIds(chatId);
+        const rooms = participantIds
+            .filter((userId) => userId !== excludeUserId)
+            .map(userRoom);
 
-    for (const userId of participantIds) {
-        if (userId === excludeUserId) continue;
-        const sockets = getConnections(userId);
-        for (const ws of sockets) {
-            if (ws.readyState === 1) ws.send(data);
-        }
+        if (rooms.length === 0) return;
+        // Socket.IO de-duplicates recipients across the listed rooms.
+        io.to(rooms).emit(event.type, event.payload);
+    } catch (err) {
+        console.error(`[WS] Failed to fan out ${event.type} to chat ${chatId}:`, err);
     }
 }
 
 export function getOnlineUserIds() {
-    return [...connections.keys()];
+    return [...userSockets.keys()];
 }

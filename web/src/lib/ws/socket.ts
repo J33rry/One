@@ -1,107 +1,60 @@
+import { io, type Socket } from "socket.io-client";
+
 type WSCallback = (payload: unknown) => void;
 
-class SocketClient {
-    private ws: WebSocket | null = null;
-    private url: string;
-    private reconnectAttempts = 0;
-    private maxReconnectAttempts = 5;
-    private reconnectTimeout = 1000;
-    private listeners: Map<string, Set<WSCallback>> = new Map();
-    private isIntentionalClose = false;
+const SOCKET_PATH = "/ws";
 
-    constructor() {
-        // Determine WS URL based on API URL
-        const apiUrl =
+class SocketClient {
+    private socket: Socket | null = null;
+
+    // The socket is created on first use rather than at module load so that
+    // nothing touches the browser-only socket.io runtime during SSR.
+    private get instance(): Socket {
+        if (this.socket) return this.socket;
+
+        const url =
             process.env.NEXT_PUBLIC_WEBSOCKET_URL || "http://localhost:3002";
-        this.url = apiUrl.replace(/^http/, "ws") + "/ws";
+
+        this.socket = io(url, {
+            path: SOCKET_PATH,
+            // Sends the session cookie on the handshake (cross-origin in dev).
+            withCredentials: true,
+            autoConnect: false,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 30000,
+        });
+
+        this.socket.on("connect", () => console.log("[WS] Connected"));
+        this.socket.on("disconnect", (reason) =>
+            console.log("[WS] Disconnected:", reason),
+        );
+        this.socket.on("connect_error", (error) =>
+            console.error("[WS] Error", error.message),
+        );
+
+        return this.socket;
     }
 
     public connect() {
-        if (
-            this.ws &&
-            (this.ws.readyState === WebSocket.CONNECTING ||
-                this.ws.readyState === WebSocket.OPEN)
-        ) {
-            return;
-        }
-
-        this.isIntentionalClose = false;
-        this.ws = new WebSocket(this.url);
-
-        this.ws.onopen = () => {
-            console.log("[WS] Connected");
-            this.reconnectAttempts = 0;
-            this.reconnectTimeout = 1000;
-        };
-
-        this.ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data && data.type) {
-                    this.emit(data.type, data.payload);
-                }
-            } catch (e) {
-                console.error("[WS] Failed to parse message", e);
-            }
-        };
-
-        this.ws.onclose = () => {
-            console.log("[WS] Disconnected");
-            this.ws = null;
-            if (!this.isIntentionalClose) {
-                this.attemptReconnect();
-            }
-        };
-
-        this.ws.onerror = (error) => {
-            console.error("[WS] Error", error);
-        };
-    }
-
-    private attemptReconnect() {
-        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            console.log("[WS] Max reconnect attempts reached");
-            return;
-        }
-
-        console.log(`[WS] Reconnecting in ${this.reconnectTimeout}ms...`);
-        setTimeout(() => {
-            this.reconnectAttempts++;
-            this.reconnectTimeout = Math.min(this.reconnectTimeout * 2, 30000); // max 30s backoff
-            this.connect();
-        }, this.reconnectTimeout);
+        this.instance.connect();
     }
 
     public disconnect() {
-        this.isIntentionalClose = true;
-        if (this.ws) {
-            this.ws.close();
-            this.ws = null;
-        }
+        this.socket?.disconnect();
     }
 
+    // Emits made while offline are buffered by socket.io and flushed on connect.
     public send(type: string, payload: unknown = {}) {
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(JSON.stringify({ type, payload }));
-        } else {
-            console.warn("[WS] Cannot send message, socket not open");
-        }
+        this.instance.emit(type, payload);
     }
 
     public on(event: string, callback: WSCallback) {
-        if (!this.listeners.has(event)) {
-            this.listeners.set(event, new Set());
-        }
-        this.listeners.get(event)?.add(callback);
+        this.instance.on(event, callback);
         return () => this.off(event, callback);
     }
 
     public off(event: string, callback: WSCallback) {
-        this.listeners.get(event)?.delete(callback);
-    }
-
-    private emit(event: string, payload: unknown) {
-        this.listeners.get(event)?.forEach((cb) => cb(payload));
+        this.socket?.off(event, callback);
     }
 }
 

@@ -1,8 +1,7 @@
 import { broadcastToChat } from "../connectionRegistry.js";
 
-export async function handleTypingEvent(ws, event) {
-    const { type, payload } = event;
-    const userId = ws.userId;
+export async function handleTypingEvent(socket, type, payload) {
+    const userId = socket.data.userId;
 
     // typing:start and typing:stop are ephemeral — no persistence,
     // just fan out to other chat participants

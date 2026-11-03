@@ -7,13 +7,13 @@ BigInt.prototype.toJSON = function () {
 import express from "express";
 import cookieParser from "cookie-parser";
 import session from "express-session";
-// import { RedisStore } from "connect-redis";
+import { RedisStore } from "connect-redis";
 import { createClient } from "redis";
 import cors from "cors";
 
 import { env } from "./src/config/env.js";
 import { errorHandler } from "./src/middleware/errorHandler.js";
-import { setupWebSocketGateway } from "./src/ws/gateway.js";
+import { setupWebSocketGateway, SOCKET_PATH } from "./src/ws/gateway.js";
 
 import authRoutes from "./src/modules/auth/auth.routes.js";
 import usersRoutes from "./src/modules/users/users.routes.js";
@@ -70,11 +70,13 @@ app.use("/api/v1", callsRoutes);
 // ── Centralized error handler (must be last) ──
 app.use(errorHandler);
 
-// ── HTTP + WebSocket server ──
+// ── HTTP + Socket.IO server ──
 const server = http.createServer(app);
 setupWebSocketGateway(server, sessionMiddleware);
 
 server.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT}`);
-    console.log(`WebSocket available at ws://localhost:${env.PORT}/ws`);
+    console.log(
+        `Socket.IO available at http://localhost:${env.PORT}${SOCKET_PATH}`,
+    );
 });
