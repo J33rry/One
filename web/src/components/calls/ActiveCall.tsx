@@ -178,7 +178,7 @@ function CallContent({ callType }: { callType: "audio" | "video" }) {
                 {remoteParticipants.map((p, i) => (
                   <div
                     key={p.sid}
-                    className="w-32 h-32 rounded-full glass-panel border-2 border-accent/40 flex items-center justify-center shadow-[0_0_40px_rgba(211,161,94,0.15)] relative z-10"
+                    className="w-32 h-32 rounded-full glass-panel border-2 border-accent/40 flex items-center justify-center shadow-[0_0_40px_var(--border-glow)] relative z-10"
                     style={{ zIndex: 10 - i }}
                   >
                     <span className="text-4xl font-bold text-accent font-display">

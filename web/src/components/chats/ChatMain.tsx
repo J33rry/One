@@ -3,18 +3,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { chatsApi } from "@/lib/api/chats";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, Info, Phone, Video, ArrowLeft, Settings, ShieldCheck } from "lucide-react";
+import { Loader2, Info, Phone, Video, ArrowLeft, Settings, ShieldCheck, MoreVertical, X } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { formatLastSeen } from "@/lib/utils/presence";
 import { MessageList } from "./MessageList";
+import { ChatWater, ChatWaterHandle } from "./ChatWater";
 import { MessageComposer } from "./MessageComposer";
 import { ActiveCall } from "../calls/ActiveCall";
 import { useCallStore } from "@/hooks/useCall";
 import { ChatSettingsModal } from "./ChatSettingsModal";
 import { Avatar } from "@/components/ui/Avatar";
 import { usePresence } from "@/hooks/usePresence";
-import { Badge } from "@/components/ui/Badge";
 import { ChatMediaPanel } from "./ChatMediaPanel";
 import { MediaLightbox } from "@/components/ui/MediaLightbox";
 import clsx from "clsx";
@@ -26,8 +26,14 @@ interface ChatMainProps {
 export function ChatMain({ chatId }: ChatMainProps) {
   const { user: currentUser } = useAuth();
   const { isOnline, getLastSeen } = usePresence();
-  const [showInfo, setShowInfo] = useState(false);
+  // The info column sits beside the chat on wide screens, so start with it
+  // open there; narrower layouts overlay it and only show it on request.
+  const [showInfo, setShowInfo] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(min-width: 1280px)").matches
+  );
+  const [showMenu, setShowMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const waterRef = useRef<ChatWaterHandle | null>(null);
   const [infoLightbox, setInfoLightbox] = useState<{
     url: string;
     type: "image" | "video";
@@ -81,203 +87,201 @@ export function ChatMain({ chatId }: ChatMainProps) {
     return (a.user?.displayName || "").localeCompare(b.user?.displayName || "");
   });
 
-  return (
-    <div className="flex-1 flex flex-col h-full bg-transparent relative overflow-hidden">
-      {isInCall && livekitToken && livekitUrl && (
-        <ActiveCall
-          token={livekitToken}
-          serverUrl={livekitUrl}
-          callType={activeCall!.type}
-        />
+  const infoPanel = (
+    <aside
+      className={clsx(
+        "flex flex-col gap-3 overflow-y-auto p-3 bg-bg xl:bg-surface-2/50",
+        "absolute inset-y-0 right-0 z-30 w-full sm:w-[360px] shadow-[var(--shadow-lg)] xl:static xl:z-auto xl:w-[340px] xl:shrink-0 xl:shadow-none xl:border-l xl:border-border"
       )}
-
-      {/* Conversation Top Header Bar - Glassmorphic */}
-      <header className="h-[72px] flex items-center justify-between px-6 border-b border-border glass-panel-subtle shrink-0 z-20">
-        <div
-          className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity group"
-          onClick={() => setShowSettings(true)}
-        >
-          <Link
-            href="/"
-            className="md:hidden p-2 -ml-2 text-muted hover:text-fg transition-colors"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-
-          <Avatar
-            src={isGroup ? chat.avatarUrl : otherParticipant?.avatarUrl}
-            name={title}
-            size="md"
-            isGroup={isGroup}
-            showPresence={!isGroup}
-            isOnline={otherUserOnline}
-            className="group-hover:ring-2 group-hover:ring-accent/30 transition-all shadow-md"
-          />
-
-          <div>
-            <h2 className="text-base font-bold text-fg leading-tight flex items-center gap-2 tracking-tight">
-              {title}
-            </h2>
-            <p className="text-[11px] font-medium mt-0.5">
-              {isGroup ? (
-                <span className="text-muted">
-                  {memberCount} member{memberCount === 1 ? "" : "s"}
-                  {onlineCount > 0 && `, ${onlineCount} online`}
-                </span>
-              ) : otherUserOnline ? (
-                <span className="text-accent font-medium flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shadow-[0_0_8px_var(--accent)]" />
-                  Online
-                </span>
-              ) : (
-                <span className="text-muted">{formatLastSeen(otherUserLastSeen)}</span>
-              )}
-            </p>
-          </div>
-        </div>
-
-        {/* Action Controls */}
-        <div className="flex items-center gap-2">
+    >
+      <section className="rounded-3xl bg-surface p-5 shadow-[var(--shadow-sm)]">
+        <div className="flex items-center justify-between">
+          <h3 className="text-[26px] font-semibold text-fg tracking-tight">
+            {isGroup ? "Group Info" : "Info"}
+          </h3>
           <button
-            onClick={() => startCall(chatId, "audio")}
-            disabled={callState !== "idle" || chat.isBlocked}
-            className="p-2.5 rounded-xl text-muted hover:text-accent hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(211,161,94,0.2)] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
-            title="Start Audio Call"
+            onClick={() => setShowInfo(false)}
+            className="p-1.5 rounded-lg text-accent hover:bg-surface-2 transition-colors"
+            title="Close"
           >
-            <Phone className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => startCall(chatId, "video")}
-            disabled={callState !== "idle" || chat.isBlocked}
-            className="p-2.5 rounded-xl text-muted hover:text-accent hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(211,161,94,0.2)] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
-            title="Start Video Call"
-          >
-            <Video className="w-5 h-5" />
-          </button>
-          <div className="w-px h-6 bg-border mx-1" />
-          <button
-            onClick={() => setShowSettings(true)}
-            className="p-2.5 rounded-xl text-muted hover:text-fg hover:bg-surface-3/50 transition-all duration-300"
-            title="Chat Settings"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setShowInfo(!showInfo)}
-            className={clsx(
-              "p-2.5 rounded-xl transition-all duration-300",
-              showInfo ? "text-accent bg-accent/10 border border-accent/20 shadow-[0_0_15px_rgba(211,161,94,0.2)]" : "text-muted hover:text-fg hover:bg-surface-3/50"
-            )}
-            title="Chat Info Drawer"
-          >
-            <Info className="w-5 h-5" />
+            <X className="w-5 h-5" />
           </button>
         </div>
-      </header>
 
-      {/* Message List Area */}
-      <MessageList chatId={chatId} />
-
-      {/* Composer Area */}
-      {chat.isBlocked ? (
-        <div className="p-4 border-t border-border bg-surface-2/30 shrink-0 flex items-center justify-center backdrop-blur-md">
-          <div className="flex items-center gap-2 text-muted text-xs italic bg-surface-3/30 px-4 py-2 rounded-full border border-border">
-            <ShieldCheck className="w-4 h-4 text-faint" />
-            You cannot reply to this conversation.
-          </div>
-        </div>
-      ) : (
-        <MessageComposer chatId={chatId} />
-      )}
-
-      {/* Info Slide-Over Panel - Glassmorphic */}
-      {showInfo && (
-        <div className="absolute inset-y-0 right-0 w-full sm:w-80 glass-panel border-l border-border flex flex-col z-30 shadow-2xl animate-in slide-in-from-right duration-300">
-          <div className="h-[72px] flex items-center justify-between px-6 border-b border-border shrink-0">
-            <h3 className="text-base font-bold text-fg tracking-tight">Chat Info</h3>
-            <button
-              onClick={() => setShowInfo(false)}
-              className="text-xs text-muted hover:text-fg px-3 py-1.5 rounded-lg bg-surface-3/40 hover:bg-surface-3 transition-colors"
-            >
-              Close
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-6 space-y-8">
-            <div className="text-center">
+        {(!isGroup || chat.description) && (
+          <div className="mt-4 flex items-center gap-3">
+            {!isGroup && (
               <Avatar
-                src={isGroup ? chat.avatarUrl : otherParticipant?.avatarUrl}
+                src={otherParticipant?.avatarUrl}
                 name={title}
-                size="xl"
-                isGroup={isGroup}
-                showPresence={!isGroup}
+                size="lg"
+                showPresence
                 isOnline={otherUserOnline}
-                className="mx-auto mb-4 shadow-xl ring-4 ring-surface-2"
               />
-              <h2 className="text-xl font-bold text-fg tracking-tight">{title}</h2>
-              {chat.description && (
-                <p className="text-xs text-muted mt-3 leading-relaxed bg-black/20 p-4 rounded-2xl border border-border shadow-inner">
-                  {chat.description}
+            )}
+            <div className="min-w-0">
+              {!isGroup && (
+                <>
+                  <p className="font-semibold text-fg truncate">{title}</p>
+                  <p className="text-sm text-muted truncate">@{otherParticipant?.username}</p>
+                </>
+              )}
+              {(isGroup ? chat.description : otherParticipant?.bio) && (
+                <p className="mt-1 text-sm text-muted leading-relaxed">
+                  {isGroup ? chat.description : otherParticipant?.bio}
                 </p>
               )}
             </div>
+          </div>
+        )}
 
-            <div>
-              <h4 className="text-[10px] font-mono font-bold text-muted uppercase tracking-widest mb-3">
-                Shared
-              </h4>
-              <ChatMediaPanel
-                chatId={chatId}
-                enabled={showInfo}
-                onOpenMedia={(url, type) => setInfoLightbox({ url, type })}
-              />
-            </div>
+        <h4 className="mt-5 mb-2 text-lg font-semibold text-fg">Files</h4>
+        <ChatMediaPanel
+          chatId={chatId}
+          enabled={showInfo}
+          onOpenMedia={(url, type) => setInfoLightbox({ url, type })}
+        />
+      </section>
 
-            <div>
-              <h4 className="text-[10px] font-mono font-bold text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
-                Participants
-                <span className="bg-surface-3/50 text-fg px-2 py-0.5 rounded-full">
-                  {memberCount}
-                  {onlineCount > 0 && ` · ${onlineCount} online`}
-                </span>
-              </h4>
-              <ul className="space-y-2">
-                {sortedParticipants.map((p) => {
-                  const pUser = p.user;
-                  const isUserOnline = isOnline(p.userId);
+      {isGroup && (
+        <section className="rounded-3xl bg-surface p-5 shadow-[var(--shadow-sm)]">
+          <h3 className="text-[22px] font-semibold text-fg tracking-tight mb-3">
+            {memberCount} member{memberCount === 1 ? "" : "s"}
+          </h3>
+          <ul className="space-y-1">
+            {sortedParticipants.map((p) => {
+              const pUser = p.user;
+              return (
+                <li key={p.id} className="flex items-center gap-3.5 py-1.5">
+                  <Avatar
+                    src={pUser?.avatarUrl}
+                    name={pUser?.displayName || pUser?.username}
+                    size="md"
+                    showPresence
+                    isOnline={isOnline(p.userId)}
+                  />
+                  <p className="flex-1 min-w-0 text-[16px] font-medium text-fg truncate">
+                    {p.userId === currentUser?.id ? "You" : pUser?.displayName}
+                  </p>
+                  {p.role === "admin" && <span className="text-sm text-accent">admin</span>}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+    </aside>
+  );
 
-                  return (
-                    <li
-                      key={p.id}
-                      className="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-surface-3/30 transition-colors border border-transparent hover:border-border"
+  return (
+    <div className="flex-1 flex h-full relative overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col h-full relative isolate">
+        <ChatWater handleRef={waterRef} />
+        {isInCall && livekitToken && livekitUrl && (
+          <ActiveCall
+            token={livekitToken}
+            serverUrl={livekitUrl}
+            callType={activeCall!.type}
+          />
+        )}
+
+        <header className="flex items-center justify-between gap-4 px-6 pt-5 pb-3 shrink-0 z-20">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link href="/" className="md:hidden p-2 -ml-2 text-muted hover:text-fg transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <button onClick={() => setShowInfo(true)} className="min-w-0 text-left">
+              <h2 className="text-[22px] md:text-[28px] font-semibold text-fg leading-tight tracking-tight truncate">
+                {title}
+              </h2>
+              <p className="text-[16px] text-muted truncate">
+                {isGroup ? (
+                  <>
+                    {memberCount} member{memberCount === 1 ? "" : "s"}
+                    {onlineCount > 0 && `, ${onlineCount} online`}
+                  </>
+                ) : otherUserOnline ? (
+                  <span className="text-success">Online</span>
+                ) : (
+                  formatLastSeen(otherUserLastSeen)
+                )}
+              </p>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0 text-muted">
+            <button
+              onClick={() => startCall(chatId, "audio")}
+              disabled={callState !== "idle" || chat.isBlocked}
+              className="p-2.5 rounded-xl hover:text-fg hover:bg-surface-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Start voice call"
+            >
+              <Phone className="w-6 h-6" strokeWidth={1.8} />
+            </button>
+            <button
+              onClick={() => startCall(chatId, "video")}
+              disabled={callState !== "idle" || chat.isBlocked}
+              className="p-2.5 rounded-xl hover:text-fg hover:bg-surface-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Start video call"
+            >
+              <Video className="w-6 h-6" strokeWidth={1.8} />
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu((v) => !v)}
+                className="p-2.5 rounded-xl hover:text-fg hover:bg-surface-2 transition-colors"
+                title="More"
+              >
+                <MoreVertical className="w-6 h-6" strokeWidth={1.8} />
+              </button>
+              {showMenu && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setShowMenu(false)} />
+                  <div className="absolute right-0 top-full mt-1 z-40 w-48 py-1.5 rounded-2xl bg-surface border border-border shadow-[var(--shadow-lg)] text-sm">
+                    <button
+                      onClick={() => {
+                        setShowInfo((v) => !v);
+                        setShowMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-muted hover:text-fg hover:bg-surface-2 transition-colors"
                     >
-                      <Avatar
-                        src={pUser?.avatarUrl}
-                        name={pUser?.displayName || pUser?.username}
-                        size="sm"
-                        showPresence
-                        isOnline={isUserOnline}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-fg truncate">
-                          {p.userId === currentUser?.id ? "You" : pUser?.displayName}
-                        </p>
-                        <p className="text-[11px] text-muted truncate">
-                          @{pUser?.username}
-                        </p>
-                      </div>
-                      {p.role === "admin" && (
-                        <Badge className="bg-accent/10 text-accent border-accent/20">Admin</Badge>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
+                      <Info className="w-4 h-4" />
+                      {showInfo ? "Hide info" : isGroup ? "Group info" : "Contact info"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowSettings(true);
+                        setShowMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-muted hover:text-fg hover:bg-surface-2 transition-colors"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Chat settings
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
-        </div>
-      )}
+        </header>
+
+        {/* Message List Area */}
+        <MessageList chatId={chatId} water={waterRef} />
+
+        {/* Composer Area */}
+        {chat.isBlocked ? (
+          <div className="p-4 shrink-0 flex items-center justify-center">
+            <div className="flex items-center gap-2 text-muted text-sm bg-surface-2 px-4 py-2.5 rounded-full">
+              <ShieldCheck className="w-4 h-4" />
+              You cannot reply to this conversation.
+            </div>
+          </div>
+        ) : (
+          <MessageComposer chatId={chatId} />
+        )}
+      </div>
+
+      {showInfo && infoPanel}
 
       {/* Settings Modal */}
       {showSettings && (

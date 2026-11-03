@@ -48,7 +48,7 @@ function formatSize(bytes?: number | null) {
 }
 
 export function ChatMediaPanel({ chatId, enabled, onOpenMedia }: ChatMediaPanelProps) {
-  const [expanded, setExpanded] = useState<MediaKind | null>(null);
+  const [expanded, setExpanded] = useState<MediaKind | null>("image");
 
   const { data: countsData, isLoading: countsLoading } = useQuery({
     queryKey: ["chat-media-counts", chatId],
@@ -77,14 +77,14 @@ export function ChatMediaPanel({ chatId, enabled, onOpenMedia }: ChatMediaPanelP
 
   if (total === 0) {
     return (
-      <p className="text-xs text-faint italic text-center py-3">
+      <p className="text-sm text-muted py-2">
         No shared media yet.
       </p>
     );
   }
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5 -mx-2">
       {KINDS.map(({ kind, label, plural, icon: Icon }) => {
         const count = counts[kind];
         if (count === 0) return null;
@@ -95,38 +95,35 @@ export function ChatMediaPanel({ chatId, enabled, onOpenMedia }: ChatMediaPanelP
             <button
               onClick={() => setExpanded(isOpen ? null : kind)}
               className={clsx(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-left",
-                isOpen
-                  ? "bg-surface-3/40 text-fg"
-                  : "text-muted hover:text-fg hover:bg-surface-3/20",
+                "w-full flex items-center gap-3.5 px-2 py-2 rounded-xl transition-colors text-left text-fg hover:bg-surface-2",
               )}
             >
-              <Icon className="w-4 h-4 shrink-0" />
-              <span className="flex-1 text-xs font-medium">
+              <Icon className="w-5 h-5 shrink-0" strokeWidth={1.8} />
+              <span className="flex-1 text-[16px] font-medium">
                 {count} {count === 1 ? label : plural}
               </span>
               <ChevronDown
                 className={clsx(
-                  "w-3.5 h-3.5 shrink-0 transition-transform duration-300",
+                  "w-5 h-5 shrink-0 transition-transform duration-300",
                   isOpen && "rotate-180",
                 )}
               />
             </button>
 
             {isOpen && (
-              <div className="px-1 pb-3 pt-1">
+              <div className="px-2 pb-2 pt-1">
                 {itemsLoading ? (
                   <div className="flex justify-center py-3">
                     <Loader2 className="w-4 h-4 animate-spin text-muted" />
                   </div>
                 ) : kind === "image" || kind === "video" ? (
                   // media has no width/height, so fixed-aspect tiles avoid layout shift
-                  <div className="grid grid-cols-3 gap-1">
+                  <div className="grid grid-cols-3 gap-2">
                     {items.map((it) => (
                       <button
                         key={it.id}
                         onClick={() => onOpenMedia(it.url, kind)}
-                        className="relative aspect-square rounded-lg overflow-hidden bg-surface-3 group"
+                        className="relative aspect-square rounded-xl overflow-hidden bg-surface-3 group"
                         title={it.fileName}
                       >
                         {kind === "image" ? (
@@ -160,12 +157,12 @@ export function ChatMediaPanel({ chatId, enabled, onOpenMedia }: ChatMediaPanelP
                           href={it.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="block px-2.5 py-2 rounded-lg hover:bg-surface-3/30 transition-colors group"
+                          className="block px-2.5 py-2 rounded-lg hover:bg-surface-2 transition-colors group"
                         >
-                          <p className="text-[11px] font-medium text-accent truncate">
+                          <p className="text-sm font-medium text-accent truncate">
                             {it.host || it.url}
                           </p>
-                          <p className="text-[10px] text-muted truncate">{it.url}</p>
+                          <p className="text-xs text-muted truncate">{it.url}</p>
                         </a>
                       </li>
                     ))}
@@ -178,14 +175,14 @@ export function ChatMediaPanel({ chatId, enabled, onOpenMedia }: ChatMediaPanelP
                           href={it.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-surface-3/30 transition-colors"
+                          className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-surface-2 transition-colors"
                         >
                           <Icon className="w-4 h-4 shrink-0 text-muted" />
                           <span className="flex-1 min-w-0">
-                            <span className="block text-[11px] text-fg truncate">
+                            <span className="block text-sm text-fg truncate">
                               {it.fileName || "Attachment"}
                             </span>
-                            <span className="block text-[10px] text-faint">
+                            <span className="block text-xs text-muted">
                               {[
                                 formatSize(it.fileSize),
                                 format(new Date(it.createdAt), "d MMM"),

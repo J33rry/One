@@ -170,7 +170,7 @@ export function FolderManagerModal({ isOpen, onClose }: FolderManagerModalProps)
                                 className={clsx(
                                   "w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors",
                                   inFolder
-                                    ? "bg-accent border-accent text-black"
+                                    ? "bg-accent border-accent text-accent-fg"
                                     : "border-border-strong",
                                 )}
                               >

@@ -8,6 +8,8 @@ const C = 1;
 const A = 3.5;
 const EYE_HEIGHT = 1.2;
 const SIM_SIZE = 1024;
+// Pale milky water, used when no base colour is given.
+const LIGHT_BASE: [number, number, number] = [0.952, 0.954, 0.962];
 const STEP = 1 / 60;
 // Height difference -> surface slope. Higher = punchier ripple highlights.
 const SLOPE = 16;
@@ -21,6 +23,8 @@ export interface WaterSurface {
   sampleLeftEdge(rows: number): Float32Array | null;
   /** Strength of the ambient swell, 0 (glassy) to 1 (default). */
   setAmbient(amount: number): void;
+  /** Colour of still water in the light style, as 0-1 RGB. */
+  setBase(rgb: [number, number, number]): void;
   /** Draw the water; `messages` is a canvas of bubbles refracted by the ripples. */
   render(time: number, messages?: TexImageSource | null): void;
   dispose(): void;
@@ -95,6 +99,7 @@ uniform float uHasMessages;
 uniform float uLight;
 uniform float uRefract;
 uniform float uAmbient;
+uniform vec3 uBase;
 
 const float C = ${C.toFixed(3)};
 const float A = ${A.toFixed(3)};
@@ -158,9 +163,11 @@ void main() {
     // Ripples get the full contrast; the swell stays a faint sheen.
     vec2 tiltDir = vec2(0.3, -0.9);
     float facing = dot(ripple, tiltDir) * 9.0 + dot(ambient, tiltDir) * 1.6;
-    col = vec3(0.952, 0.954, 0.962);
-    col += vec3(0.05) * clamp(facing, 0.0, 1.0) - vec3(0.2, 0.2, 0.19) * clamp(-facing, 0.0, 1.2);
-    col += vec3(0.5) * pow(clamp(facing - 0.6, 0.0, 1.0), 2.0);
+    // Shading scales with the base, so dark water keeps its contrast.
+    float lum = dot(uBase, vec3(0.299, 0.587, 0.114));
+    col = uBase * (1.0 - 0.21 * clamp(-facing, 0.0, 1.2));
+    col += vec3(0.05) * clamp(facing, 0.0, 1.0);
+    col += vec3(0.5 * (0.3 + 0.7 * lum)) * pow(clamp(facing - 0.6, 0.0, 1.0), 2.0);
     col = min(col, vec3(1.0));
   } else {
     col = mix(DEEP, sky(r), fresnel);
@@ -221,11 +228,15 @@ export interface WaterOptions {
   light?: boolean;
   /** How far ripple slopes bend the overlay layer. */
   refract?: number;
+  /** Still-water colour for the light style (0-1 RGB). */
+  base?: [number, number, number];
+  /** Height-field resolution. Smaller grids carry rings across the screen faster. */
+  simSize?: number;
 }
 
 export function createWaterSurface(
   canvas: HTMLCanvasElement,
-  { light = false, refract = 0.012 }: WaterOptions = {}
+  { light = false, refract = 0.012, base = LIGHT_BASE, simSize = SIM_SIZE }: WaterOptions = {}
 ): WaterSurface | null {
   const gl = canvas.getContext("webgl2", { antialias: false, alpha: false, premultipliedAlpha: false });
   if (!gl) return null;
@@ -255,7 +266,7 @@ export function createWaterSurface(
   const targets = [0, 1].map(() => {
     const texture = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, SIM_SIZE, SIM_SIZE, 0, gl.RGBA, gl.HALF_FLOAT, null);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, simSize, simSize, 0, gl.RGBA, gl.HALF_FLOAT, null);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -288,6 +299,7 @@ export function createWaterSurface(
   let yMin = 0;
   let accumulator = 0;
   let ambientAmount = 1;
+  let baseColor = base;
 
   // Run one simulation pass reading the current texture into the other one.
   const simPass = (program: WebGLProgram, setUniforms: () => void) => {
@@ -295,7 +307,7 @@ export function createWaterSurface(
     const dst = targets[1 - current];
     gl.useProgram(program);
     gl.bindFramebuffer(gl.FRAMEBUFFER, dst.framebuffer);
-    gl.viewport(0, 0, SIM_SIZE, SIM_SIZE);
+    gl.viewport(0, 0, simSize, simSize);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, src.texture);
     gl.uniform1i(gl.getUniformLocation(program, "uWater"), 0);
@@ -334,7 +346,7 @@ export function createWaterSurface(
       const program = programs.update;
       while (accumulator >= STEP) {
         simPass(program, () => {
-          gl.uniform2f(gl.getUniformLocation(program, "uDelta"), 1 / SIM_SIZE, 1 / SIM_SIZE);
+          gl.uniform2f(gl.getUniformLocation(program, "uDelta"), 1 / simSize, 1 / simSize);
         });
         accumulator -= STEP;
       }
@@ -342,6 +354,10 @@ export function createWaterSurface(
 
     setAmbient(amount) {
       ambientAmount = amount;
+    },
+
+    setBase(rgb) {
+      baseColor = rgb;
     },
 
     render(time, messages) {
@@ -365,13 +381,14 @@ export function createWaterSurface(
       gl.uniform1f(gl.getUniformLocation(program, "uDomain"), domain);
       gl.uniform1f(gl.getUniformLocation(program, "uYMin"), yMin);
       gl.uniform1f(gl.getUniformLocation(program, "uTime"), time);
-      gl.uniform1f(gl.getUniformLocation(program, "uTexel"), 1 / SIM_SIZE);
+      gl.uniform1f(gl.getUniformLocation(program, "uTexel"), 1 / simSize);
       gl.uniform1f(gl.getUniformLocation(program, "uSlope"), SLOPE);
       gl.uniform1i(gl.getUniformLocation(program, "uMessages"), 1);
       gl.uniform1f(gl.getUniformLocation(program, "uHasMessages"), messages ? 1 : 0);
       gl.uniform1f(gl.getUniformLocation(program, "uLight"), light ? 1 : 0);
       gl.uniform1f(gl.getUniformLocation(program, "uRefract"), refract);
       gl.uniform1f(gl.getUniformLocation(program, "uAmbient"), ambientAmount);
+      gl.uniform3f(gl.getUniformLocation(program, "uBase"), ...baseColor);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     },
 

@@ -13,7 +13,7 @@ export function TwoPaneLayout({ sidebar, main, showMainOnMobile = false }: TwoPa
       {/* Sidebar Pane */}
       <div 
         className={clsx(
-          "w-full md:w-80 lg:w-96 flex-shrink-0 border-r border-border bg-surface-2/30 flex flex-col h-full overflow-hidden transition-all duration-300",
+          "w-full md:w-[340px] lg:w-[392px] flex-shrink-0 border-r border-border bg-surface flex flex-col h-full overflow-hidden",
           showMainOnMobile ? "hidden md:flex" : "flex"
         )}
       >
@@ -23,7 +23,7 @@ export function TwoPaneLayout({ sidebar, main, showMainOnMobile = false }: TwoPa
       {/* Main Pane */}
       <div 
         className={clsx(
-          "flex-1 min-w-0 bg-transparent flex flex-col relative h-full overflow-hidden",
+          "flex-1 min-w-0 bg-bg flex flex-col relative h-full overflow-hidden",
           showMainOnMobile ? "flex" : "hidden md:flex"
         )}
       >

@@ -106,7 +106,7 @@ function FolderPill({
         <span
           className={clsx(
             "min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold font-mono flex items-center justify-center",
-            active ? "bg-accent text-black" : "bg-surface-3 text-fg",
+            active ? "bg-accent text-accent-fg" : "bg-surface-3 text-fg",
           )}
         >
           {count > 99 ? "99+" : count}

@@ -9,7 +9,9 @@ import { messagesApi, Message } from "@/lib/api/messages";
 import { callsApi, Call } from "@/lib/api/calls";
 import { chatsApi } from "@/lib/api/chats";
 import React, {
+    RefObject,
     useEffect,
+    useLayoutEffect,
     useRef,
     useCallback,
     useState,
@@ -42,10 +44,16 @@ import { Avatar } from "@/components/ui/Avatar";
 import { MediaLightbox } from "@/components/ui/MediaLightbox";
 import { MessageListSkeleton } from "@/components/ui/Skeleton";
 import { renderMessageText } from "@/lib/utils/mentions";
+import { VoiceNote } from "./VoiceNote";
+import type { ChatWaterHandle } from "./ChatWater";
 
 interface MessageListProps {
     chatId: string;
+    water?: RefObject<ChatWaterHandle | null>;
 }
+
+// How long a new message takes to slide up from the composer.
+const SLIDE_MS = 520;
 
 type TimelineItem =
     | { type: "message"; data: Message; timestamp: number }
@@ -128,24 +136,21 @@ function MessageBubble({
     return (
         <div
             className={clsx(
-                "flex gap-3 max-w-[85%] sm:max-w-[75%] min-w-0 group/row relative my-1 animate-in-slide",
-                isMe ? "self-end" : "self-start",
+                "flex items-center gap-3 sm:gap-4 max-w-[90%] sm:max-w-[80%] min-w-0 group/row relative animate-in-slide",
+                isMe ? "self-end flex-row-reverse" : "self-start",
             )}
+            data-msg-id={msg.id}
         >
-            {!isMe && (
-                <div className="w-8 shrink-0 flex items-end mb-1">
-                    {showAvatar ? (
-                        <Avatar
-                            src={msg.sender?.avatarUrl}
-                            name={msg.sender?.displayName}
-                            size="sm"
-                            className="shadow-md"
-                        />
-                    ) : (
-                        <div className="w-8" />
-                    )}
-                </div>
-            )}
+            <div className="hidden sm:block w-14 shrink-0">
+                {showAvatar && (
+                    <Avatar
+                        src={msg.sender?.avatarUrl}
+                        name={msg.sender?.displayName}
+                        size="xl"
+                        className="[&>div]:!w-14 [&>div]:!h-14"
+                    />
+                )}
+            </div>
 
             <div
                 className={clsx(
@@ -153,22 +158,22 @@ function MessageBubble({
                     isMe ? "items-end" : "items-start",
                 )}
             >
-                {!isMe && showAvatar && (
-                    <span className="text-[11px] font-semibold text-muted ml-2 mb-1.5">
-                        {msg.sender?.displayName}
-                    </span>
-                )}
-
                 <div
+                    data-bubble
                     className={clsx(
-                        "px-5 py-3 rounded-[24px] group relative text-[15px] shadow-sm transition-all duration-300 min-w-0 max-w-full break-words [overflow-wrap:anywhere]",
+                        "px-4 py-2.5 rounded-[18px] group relative text-[16px] min-w-0 max-w-full break-words [overflow-wrap:anywhere]",
                         msg.isDeleted
-                            ? "bg-surface-2 border border-border italic text-faint"
+                            ? "bg-surface-2 italic text-muted"
                             : isMe
-                              ? "bg-accent text-accent-fg rounded-br-sm shadow-[0_4px_20px_rgba(211,161,94,0.15)]"
-                              : "glass-panel text-fg rounded-bl-sm",
+                              ? "bg-accent text-accent-fg shadow-[0_10px_24px_-14px_var(--accent)]"
+                              : "bg-surface-2 text-fg",
                     )}
                 >
+                    {!isMe && showAvatar && isGroup && !msg.isDeleted && (
+                        <p className="text-[15px] font-semibold text-accent leading-tight mb-0.5">
+                            {msg.sender?.displayName}
+                        </p>
+                    )}
                     {msg.isDeleted ? (
                         "This message was deleted."
                     ) : (
@@ -179,8 +184,8 @@ function MessageBubble({
                                     className={clsx(
                                         "mb-3 p-3 rounded-2xl text-xs border-l-[3px] max-h-20 overflow-hidden relative",
                                         isMe
-                                            ? "bg-accent-hover/20 border-accent-fg/40 text-accent-fg/90"
-                                            : "bg-surface-3/30 border-accent text-muted",
+                                            ? "bg-white/15 border-white/60 text-accent-fg/90"
+                                            : "bg-surface border-accent text-muted",
                                     )}
                                 >
                                     <p
@@ -242,13 +247,11 @@ function MessageBubble({
 
                             {/* Audio Media Attachment */}
                             {msg.type === "audio" && msg.media && (
-                                <div className="mb-2 min-w-[220px]">
-                                    <audio
-                                        src={msg.media.url}
-                                        controls
-                                        className="w-full h-10 rounded-xl outline-none"
-                                    />
-                                </div>
+                                <VoiceNote
+                                    src={msg.media.url}
+                                    seed={msg.id}
+                                    isMe={isMe}
+                                />
                             )}
 
                             {/* Document/File Media Attachment */}
@@ -260,13 +263,13 @@ function MessageBubble({
                                     className={clsx(
                                         "flex items-center gap-3 mb-2 p-3 rounded-2xl transition-colors shadow-sm",
                                         isMe
-                                            ? "bg-accent-hover/30 border border-accent-fg/20 hover:bg-accent-hover/40 text-accent-fg"
-                                            : "bg-surface-3/50 border border-border hover:bg-surface-3/70 text-fg",
+                                            ? "bg-white/15 hover:bg-white/25 text-accent-fg"
+                                            : "bg-surface hover:bg-surface-3 text-fg",
                                     )}
                                 >
                                     <div className={clsx(
                                         "p-2.5 rounded-xl shrink-0",
-                                        isMe ? "bg-accent-fg/20 text-accent-fg" : "bg-accent/10 text-accent"
+                                        isMe ? "bg-white/20 text-accent-fg" : "bg-accent-muted text-accent"
                                     )}>
                                         <FileIcon className="w-5 h-5" />
                                     </div>
@@ -284,7 +287,7 @@ function MessageBubble({
 
                             {/* Text content */}
                             {msg.content && (
-                                <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] leading-relaxed font-medium">
+                                <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] leading-snug">
                                     {renderMessageText(
                                         msg.content,
                                         msg.mentions,
@@ -295,8 +298,8 @@ function MessageBubble({
                             )}
 
                             {msg.isEdited && (
-                                <span className="text-[10px] opacity-70 ml-2 font-mono uppercase tracking-widest inline-block mt-1">
-                                    (edited)
+                                <span className="text-xs opacity-70 inline-block mt-0.5">
+                                    edited
                                 </span>
                             )}
 
@@ -340,7 +343,7 @@ function MessageBubble({
                                                         }
                                                     >
                                                         <EmojiPicker
-                                                            theme={Theme.DARK}
+                                                            theme={Theme.AUTO}
                                                             onEmojiClick={(e) =>
                                                                 handleReact(
                                                                     e.emoji,
@@ -444,73 +447,68 @@ function MessageBubble({
                             )}
                         </>
                     )}
-                </div>
 
-                {/* Reaction Badges */}
-                {reactionsMap.size > 0 && !msg.isDeleted && (
-                    <div className={clsx(
-                        "flex flex-wrap gap-1 mt-1.5 z-0 relative",
-                        isMe ? "pr-1" : "pl-1"
-                    )}>
-                        {Array.from(reactionsMap.entries()).map(
-                            ([emoji, { count, me }]) => (
-                                <button
-                                    key={emoji}
-                                    onClick={() => handleToggleReaction(emoji)}
-                                    className={clsx(
-                                        "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all shadow-sm",
-                                        me
-                                            ? "bg-accent/20 text-accent border border-accent/30 shadow-[0_0_10px_rgba(211,161,94,0.1)]"
-                                            : "glass-pill text-muted hover:text-fg hover:bg-surface-3/30 border border-border",
-                                    )}
-                                >
-                                    <span>{emoji}</span>
-                                    {count > 1 && <span className="opacity-80">{count}</span>}
-                                </button>
-                            ),
-                        )}
-                    </div>
-                )}
+                    {/* Footer: reactions on the left, seen-count + time on the right */}
+                    {!msg.isDeleted && (
+                        <div className="flex items-end justify-between gap-4 mt-1.5">
+                            <div className="flex flex-wrap gap-1.5">
+                                {Array.from(reactionsMap.entries()).map(
+                                    ([emoji, { count, me }]) => (
+                                        <button
+                                            key={emoji}
+                                            onClick={() => handleToggleReaction(emoji)}
+                                            className={clsx(
+                                                "flex items-center gap-1 px-2 py-0.5 rounded-full text-[14px] font-medium transition-colors",
+                                                isMe
+                                                    ? me ? "bg-white/30" : "bg-white/15 hover:bg-white/25"
+                                                    : me
+                                                      ? "bg-surface text-accent ring-1 ring-accent/50"
+                                                      : "bg-surface text-fg hover:ring-1 hover:ring-border-strong",
+                                            )}
+                                        >
+                                            <span>{emoji}</span>
+                                            <span>{count}</span>
+                                        </button>
+                                    ),
+                                )}
+                            </div>
 
-                <div
-                    className={clsx(
-                        "flex items-center gap-1.5 px-2 mt-1.5 text-[10px] text-faint font-mono tracking-wider",
+                            <div
+                                className={clsx(
+                                    "flex items-center gap-1.5 text-[13px] whitespace-nowrap ml-auto",
+                                    isMe ? "text-accent-fg/85" : "text-muted",
+                                )}
+                            >
+                                {/* Read count — only members other than the sender get a
+                                    message_status row, so this is "how many have seen it". */}
+                                {isGroup && readCount > 0 && (
+                                    <span
+                                        className="flex items-center gap-1 mr-1.5"
+                                        title={`Seen by ${readCount}`}
+                                    >
+                                        <Eye className="w-3.5 h-3.5" />
+                                        {readCount}
+                                    </span>
+                                )}
+
+                                <span>{format(new Date(msg.createdAt), "HH:mm")}</span>
+
+                                {isMe && !isGroup &&
+                                    (readCount > 0 ? (
+                                        <CheckCheck className="w-4 h-4" aria-label="Read" />
+                                    ) : (
+                                        <Check className="w-4 h-4 opacity-70" aria-label="Sent" />
+                                    ))}
+                            </div>
+                        </div>
                     )}
-                >
-                    {/* Read count — only members other than the sender get a
-                        message_status row, so this is "how many have seen it". */}
-                    {isGroup && !msg.isDeleted && readCount > 0 && (
-                        <span
-                            className="flex items-center gap-0.5"
-                            title={`Seen by ${readCount}`}
-                        >
-                            <Eye className="w-3 h-3" />
-                            {readCount}
-                        </span>
-                    )}
-
-                    <span>{format(new Date(msg.createdAt), "HH:mm")}</span>
-
-                    {isMe &&
-                        !msg.isDeleted &&
-                        (readCount > 0 ? (
-                            <CheckCheck
-                                className="w-3.5 h-3.5 text-accent"
-                                aria-label="Read"
-                            />
-                        ) : (
-                            <Check
-                                className="w-3.5 h-3.5 opacity-60"
-                                aria-label="Sent"
-                            />
-                        ))}
                 </div>
             </div>
         </div>
     );
 }
 
-export function MessageList({ chatId }: MessageListProps) {
+export function MessageList({ chatId, water }: MessageListProps) {
     const { user: currentUser } = useAuth();
     const queryClient = useQueryClient();
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -682,6 +680,66 @@ export function MessageList({ chatId }: MessageListProps) {
         }
     }, [chatId, timelineItems.length]);
 
+    // Messages that arrive while the chat is open slide up from the composer,
+    // rippling the water along the way. Whatever was there on open, and
+    // older pages loaded by scrolling up, just appear.
+    const seenRef = useRef<{ chatId: string; ids: Set<string>; latest: number } | null>(null);
+    useLayoutEffect(() => {
+        if (isMessagesLoading || !messagesData) return;
+        const msgs = messagesData.pages.flatMap((page) => page.messages || []);
+        const stamp = (m: Message) => new Date(m.createdAt).getTime();
+        const latest = msgs.reduce((max, m) => Math.max(max, stamp(m)), 0);
+        const seen = seenRef.current;
+        if (!seen || seen.chatId !== chatId) {
+            seenRef.current = { chatId, ids: new Set(msgs.map((m) => m.id)), latest };
+            return;
+        }
+        const fresh = msgs.filter((m) => !seen.ids.has(m.id) && stamp(m) >= seen.latest);
+        msgs.forEach((m) => seen.ids.add(m.id));
+        seen.latest = Math.max(seen.latest, latest);
+        if (!fresh.length || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+        for (const m of fresh) {
+            const row = scrollRef.current?.querySelector<HTMLElement>(`[data-msg-id="${m.id}"]`);
+            if (!row) continue;
+            // Hidden until the next frame, by when the list has scrolled to the
+            // bubble's final spot, so the slide can be measured from there.
+            row.style.visibility = "hidden";
+            requestAnimationFrame(() => {
+                row.style.visibility = "";
+                const list = scrollRef.current;
+                if (!row.isConnected || !list) return;
+                const bubble = row.querySelector<HTMLElement>("[data-bubble]") ?? row;
+                // Slide up from the composer, entering under the list's bottom edge.
+                const from = Math.max(list.getBoundingClientRect().bottom - bubble.getBoundingClientRect().top + 16, 48);
+                row.animate(
+                    [{ transform: `translateY(${from}px)` }, { transform: "translateY(0)" }],
+                    { duration: SLIDE_MS, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" },
+                );
+                row.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 180, easing: "ease-out" });
+
+                // It drags a wake across the water as it travels, strongest at the
+                // start, then a last ring where it comes to rest.
+                const start = performance.now();
+                let lastDrop = -Infinity;
+                const wake = (now: number) => {
+                    if (!row.isConnected) return;
+                    const t = (now - start) / SLIDE_MS;
+                    if (t >= 1) {
+                        water?.current?.surface(bubble.getBoundingClientRect(), 0.7);
+                        return;
+                    }
+                    if (now - lastDrop > 55) {
+                        lastDrop = now;
+                        water?.current?.surface(bubble.getBoundingClientRect(), 0.25 + 0.6 * (1 - t));
+                    }
+                    requestAnimationFrame(wake);
+                };
+                requestAnimationFrame(wake);
+            });
+        }
+    }, [messagesData, chatId, isMessagesLoading, water]);
+
     // Reset initial load flag when switching chats
     useEffect(() => {
         isInitialLoadRef.current = true;
@@ -714,7 +772,7 @@ export function MessageList({ chatId }: MessageListProps) {
 
     return (
         <div
-            className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 flex flex-col min-w-0 max-w-full relative z-0"
+            className="flex-1 overflow-y-auto overflow-x-hidden px-4 md:px-6 py-3 flex flex-col min-w-0 max-w-full relative z-0"
             ref={scrollRef}
         >
             {hasNextPage && (
@@ -735,7 +793,7 @@ export function MessageList({ chatId }: MessageListProps) {
                     Beginning of conversation
                 </div>
             ) : (
-                <div className="flex flex-col mt-auto space-y-4">
+                <div className="flex flex-col mt-auto space-y-3">
                     {timelineItems.map((item, index) => {
                         const itemDate = new Date(item.timestamp);
                         const prevItemDate =
@@ -756,7 +814,7 @@ export function MessageList({ chatId }: MessageListProps) {
                                 {/* Sticky Date Divider */}
                                 {showDateDivider && (
                                     <div className="sticky top-2 z-10 flex justify-center my-4 pointer-events-none">
-                                        <span className="glass-pill px-4 py-1.5 text-[11px] font-bold font-mono tracking-widest uppercase text-muted shadow-md">
+                                        <span className="rounded-full bg-surface px-4 py-1.5 text-[13px] font-medium text-muted shadow-[var(--shadow-sm)] border border-border">
                                             {format(itemDate, "MMM d, yyyy")}
                                         </span>
                                     </div>
@@ -867,10 +925,8 @@ export function MessageList({ chatId }: MessageListProps) {
                                               }
                                           }
                                           const showAvatar =
-                                              !isMe &&
-                                              (!prevMsg ||
-                                                  prevMsg.senderId !==
-                                                      msg.senderId);
+                                              !prevMsg ||
+                                              prevMsg.senderId !== msg.senderId;
 
                                           return (
                                               <MessageBubble
@@ -892,7 +948,7 @@ export function MessageList({ chatId }: MessageListProps) {
                     {typingUsers.length > 0 && (
                         <div className="flex gap-3 self-start items-center mt-3 animate-in-slide">
                             <Avatar size="sm" className="opacity-70" />
-                            <div className="glass-panel text-muted rounded-[24px] rounded-bl-sm px-5 py-3.5 flex items-center gap-2 shadow-sm">
+                            <div className="bg-surface-2 text-muted rounded-[18px] px-5 py-3.5 flex items-center gap-2">
                                 <span
                                     className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce"
                                     style={{ animationDelay: "0ms" }}

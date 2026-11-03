@@ -116,7 +116,8 @@ export function stoneUnderside(stone: Stone, rx: number) {
 
 /**
  * Draw the stone at screen (x, y) with height z above the water.
- * `scale` is the perspective scale at that row.
+ * `scale` is the perspective scale at that row. `rim` (0-1) adds an edge light
+ * that lifts a dark stone off dark water.
  */
 export function drawStone(
   ctx: CanvasRenderingContext2D,
@@ -125,7 +126,8 @@ export function drawStone(
   y: number,
   z: number,
   scale: number,
-  time: number
+  time: number,
+  rim = 0
 ) {
   const rx = 15 * scale * stone.size;
   const spin = stone.spinPhase + time * stone.spin;
@@ -215,6 +217,19 @@ export function drawStone(
     bounce.addColorStop(1, "rgba(220,222,228,0.16)");
     ctx.fillStyle = bounce;
     ctx.fillRect(-rx * 1.4, -rx * 1.4, rx * 2.8, rx * 2.8 + thick);
+    if (rim > 0) {
+      // Edge light from above and behind: brightest along the top rim, a faint
+      // lift along the waterline. Stroked inside the clip, so only the inner half shows.
+      const top = cy - rx * tiltEff * stone.aspect;
+      const bottom = cy + rx * tiltEff * stone.aspect;
+      const edge = ctx.createLinearGradient(0, top, 0, bottom);
+      edge.addColorStop(0, `rgba(214,216,236,${0.75 * rim})`);
+      edge.addColorStop(0.45, `rgba(170,172,196,${0.12 * rim})`);
+      edge.addColorStop(1, `rgba(150,152,180,${0.3 * rim})`);
+      ctx.strokeStyle = edge;
+      ctx.lineWidth = Math.max(1.5, rx * 0.07);
+      ctx.stroke(body);
+    }
     // Wet glint toward the light.
     ctx.translate(-rx * 0.1, cy - rx * tiltEff * stone.aspect * 0.62);
     ctx.rotate(-0.25);

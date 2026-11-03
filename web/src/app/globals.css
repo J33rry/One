@@ -2,47 +2,51 @@
 
 /*
  * ============================================================
- *  DESIGN TOKENS — "Dark editorial / warm sepia"
- *  Typography-led, warm neutrals, one restrained amber accent.
- *  Two modes. Selection order:
+ *  DESIGN TOKENS — "Pebble"
+ *  Soft lavender surfaces, a periwinkle accent, and a near-black
+ *  navigation rail that frames the app. Two modes. Selection order:
  *    1. Explicit user choice  -> [data-theme="light"|"dark"] (ThemeToggle, wins)
  *    2. No choice             -> follows OS via prefers-color-scheme
  *    3. Fallback              -> dark
  *  Components consume ONLY the semantic utilities generated below
  *  (bg-bg, bg-surface, text-fg, text-muted, text-accent, ...).
+ *  --rail is the near-black frame the nav rail and main panel sit on.
  *  Legacy aliases are kept so older surfaces stay intact.
  * ============================================================
  */
 
 :root {
-  /* ---- Dark (warm ink) — default ---- */
-  --bg: #100e0b;
-  --surface: #17140f;
-  --surface-2: #201c16;
-  --surface-3: #2a251d;
+  /* ---- Dark — default ---- */
+  --bg: #121119;
+  --rail: #08080c;
+  --rail-fg: #e9e8f6;
+  --surface: #17161f;
+  --surface-2: #211f2e;
+  --surface-3: #2c2a3e;
 
-  --border: rgba(240, 233, 218, 0.08);
-  --border-strong: rgba(240, 233, 218, 0.15);
-  --border-glow: rgba(211, 161, 94, 0.22);
+  --border: rgba(238, 237, 251, 0.07);
+  --border-strong: rgba(238, 237, 251, 0.14);
+  --border-glow: rgba(139, 140, 248, 0.3);
 
-  --fg: #f3eee3;
-  --muted: #ada595;
-  --faint: #766d5f;
+  --fg: #eeedfb;
+  --muted: #a3a1bb;
+  --faint: #6f6d86;
 
-  --accent: #d3a15e;
-  --accent-hover: #e0b477;
-  --accent-fg: #1a1509;
-  --accent-muted: rgba(211, 161, 94, 0.14);
+  --accent: #8b8cf8;
+  --accent-hover: #9d9efa;
+  --accent-fg: #ffffff;
+  --accent-muted: rgba(139, 140, 248, 0.16);
 
-  --danger: #d9776a;
-  --danger-fg: #1a0e0c;
-  --success: #5fb87f;
+  --danger: #f0624c;
+  --danger-fg: #ffffff;
+  --success: #3ccf75;
+  --warning: #f5b03c;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 10px 30px -14px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, 0.72);
 
-  --radius: 0.625rem;
+  --radius: 0.75rem;
 
   color-scheme: dark;
 }
@@ -50,31 +54,34 @@
 /* System preference applies ONLY when the user hasn't chosen explicitly */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
-    --bg: #f4efe6;
-    --surface: #fbf8f2;
-    --surface-2: #ece5d8;
-    --surface-3: #e2dacb;
+    --bg: #f7f7fe;
+    --rail: #1c1b22;
+    --rail-fg: #f4f3fb;
+    --surface: #ffffff;
+    --surface-2: #eeedfd;
+    --surface-3: #e2e1fb;
 
-    --border: rgba(28, 24, 18, 0.1);
-    --border-strong: rgba(28, 24, 18, 0.17);
-    --border-glow: rgba(181, 122, 47, 0.22);
+    --border: rgba(20, 18, 31, 0.08);
+    --border-strong: rgba(20, 18, 31, 0.14);
+    --border-glow: rgba(123, 124, 246, 0.3);
 
-    --fg: #1c1a15;
-    --muted: #5f574a;
-    --faint: #8a8073;
+    --fg: #14121f;
+    --muted: #5d5a70;
+    --faint: #9a97ab;
 
-    --accent: #b57a2f;
-    --accent-hover: #9c661f;
-    --accent-fg: #fffaf0;
-    --accent-muted: rgba(181, 122, 47, 0.14);
+    --accent: #7b7cf6;
+    --accent-hover: #6a6bef;
+    --accent-fg: #ffffff;
+    --accent-muted: rgba(123, 124, 246, 0.14);
 
-    --danger: #b5443a;
-    --danger-fg: #fff5f3;
-    --success: #3f8f5a;
+    --danger: #f0573f;
+    --danger-fg: #ffffff;
+    --success: #34c06a;
+    --warning: #f5a524;
 
-    --shadow-sm: 0 1px 2px rgba(51, 42, 26, 0.08);
-    --shadow-md: 0 8px 24px -14px rgba(51, 42, 26, 0.22);
-    --shadow-lg: 0 24px 60px -22px rgba(51, 42, 26, 0.28);
+    --shadow-sm: 0 1px 2px rgba(41, 38, 92, 0.06);
+    --shadow-md: 0 10px 30px -16px rgba(41, 38, 92, 0.28);
+    --shadow-lg: 0 24px 60px -24px rgba(41, 38, 92, 0.35);
 
     color-scheme: light;
   }
@@ -86,31 +93,34 @@
 }
 
 :root[data-theme="light"] {
-  --bg: #f4efe6;
-  --surface: #fbf8f2;
-  --surface-2: #ece5d8;
-  --surface-3: #e2dacb;
+  --bg: #f7f7fe;
+  --rail: #1c1b22;
+  --rail-fg: #f4f3fb;
+  --surface: #ffffff;
+  --surface-2: #eeedfd;
+  --surface-3: #e2e1fb;
 
-  --border: rgba(28, 24, 18, 0.1);
-  --border-strong: rgba(28, 24, 18, 0.17);
-  --border-glow: rgba(181, 122, 47, 0.22);
+  --border: rgba(20, 18, 31, 0.08);
+  --border-strong: rgba(20, 18, 31, 0.14);
+  --border-glow: rgba(123, 124, 246, 0.3);
 
-  --fg: #1c1a15;
-  --muted: #5f574a;
-  --faint: #8a8073;
+  --fg: #14121f;
+  --muted: #5d5a70;
+  --faint: #9a97ab;
 
-  --accent: #b57a2f;
-  --accent-hover: #9c661f;
-  --accent-fg: #fffaf0;
-  --accent-muted: rgba(181, 122, 47, 0.14);
+  --accent: #7b7cf6;
+  --accent-hover: #6a6bef;
+  --accent-fg: #ffffff;
+  --accent-muted: rgba(123, 124, 246, 0.14);
 
-  --danger: #b5443a;
-  --danger-fg: #fff5f3;
-  --success: #3f8f5a;
+  --danger: #f0573f;
+  --danger-fg: #ffffff;
+  --success: #34c06a;
+  --warning: #f5a524;
 
-  --shadow-sm: 0 1px 2px rgba(51, 42, 26, 0.08);
-  --shadow-md: 0 8px 24px -14px rgba(51, 42, 26, 0.22);
-  --shadow-lg: 0 24px 60px -22px rgba(51, 42, 26, 0.28);
+  --shadow-sm: 0 1px 2px rgba(41, 38, 92, 0.06);
+  --shadow-md: 0 10px 30px -16px rgba(41, 38, 92, 0.28);
+  --shadow-lg: 0 24px 60px -24px rgba(41, 38, 92, 0.35);
 
   color-scheme: light;
 }
@@ -132,6 +142,8 @@
 @theme inline {
   /* Semantic color scale — generates bg, text, border and ring utilities */
   --color-bg: var(--bg);
+  --color-rail: var(--rail);
+  --color-rail-fg: var(--rail-fg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);
@@ -148,6 +160,7 @@
   --color-danger: var(--danger);
   --color-danger-fg: var(--danger-fg);
   --color-success: var(--success);
+  --color-warning: var(--warning);
 
   /* Legacy names still referenced by older components */
   --color-background: var(--bg);
@@ -157,7 +170,7 @@
   --color-surface-tertiary: var(--surface-3);
 
   /* Type families */
-  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-display: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }

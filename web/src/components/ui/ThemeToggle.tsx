@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Monitor, Sun, Moon } from "lucide-react";
 import clsx from "clsx";
 
-type ThemeChoice = "system" | "light" | "dark";
+export type ThemeChoice = "system" | "light" | "dark";
 
 const OPTIONS: { value: ThemeChoice; label: string; icon: typeof Monitor }[] = [
   { value: "system", label: "System", icon: Monitor },
@@ -13,11 +13,12 @@ const OPTIONS: { value: ThemeChoice; label: string; icon: typeof Monitor }[] = [
 ];
 
 /**
- * Theme switcher. Persists an explicit choice to localStorage and reflects it
- * via <html data-theme>. "System" clears the override so prefers-color-scheme
- * takes over. Pairs with the no-FOUC init script in app/layout.tsx.
+ * Current theme choice plus a setter. Persists an explicit choice to
+ * localStorage and reflects it via <html data-theme>. "System" clears the
+ * override so prefers-color-scheme takes over. Pairs with the no-FOUC init
+ * script in app/layout.tsx.
  */
-export function ThemeToggle() {
+export function useThemeChoice() {
   const [choice, setChoice] = useState<ThemeChoice>("system");
 
   // Read the persisted choice after mount. Doing this in an effect (rather than
@@ -40,6 +41,13 @@ export function ThemeToggle() {
       localStorage.setItem("theme", next);
     }
   };
+
+  return [choice, apply] as const;
+}
+
+/** Compact segmented theme switcher. */
+export function ThemeToggle() {
+  const [choice, apply] = useThemeChoice();
 
   return (
     <div

@@ -7,7 +7,7 @@ import { User, Users } from "lucide-react";
 export interface AvatarProps {
   src?: string | null;
   name?: string | null;
-  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  size?: "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
   isGroup?: boolean;
   isOnline?: boolean;
   showPresence?: boolean;
@@ -29,6 +29,7 @@ export function Avatar({
     md: "w-10 h-10 text-sm",
     lg: "w-12 h-12 text-base",
     xl: "w-16 h-16 text-xl",
+    "2xl": "w-36 h-36 text-4xl",
   };
 
   const indicatorSizes = {
@@ -37,6 +38,7 @@ export function Avatar({
     md: "w-3 h-3 ring-2",
     lg: "w-3.5 h-3.5 ring-2",
     xl: "w-4 h-4 ring-2",
+    "2xl": "w-5 h-5 ring-4",
   };
 
   const iconSizes = {
@@ -45,6 +47,7 @@ export function Avatar({
     md: "w-5 h-5",
     lg: "w-6 h-6",
     xl: "w-8 h-8",
+    "2xl": "w-14 h-14",
   };
 
   const initials = name
@@ -60,14 +63,14 @@ export function Avatar({
     <div className={clsx("relative inline-block shrink-0", className)}>
       <div
         className={clsx(
-          "rounded-full bg-surface-2 border border-border overflow-hidden flex items-center justify-center font-semibold text-accent select-none shadow-sm",
+          "rounded-[30%] bg-surface-2 overflow-hidden flex items-center justify-center font-semibold text-accent select-none",
           sizeClasses[size]
         )}
       >
         {src ? (
           <img src={src} alt={name || "Avatar"} className="w-full h-full object-cover" />
         ) : isGroup ? (
-          <Users className={clsx("text-muted", iconSizes[size])} />
+          <Users className={clsx("text-accent", iconSizes[size])} />
         ) : name ? (
           <span>{initials}</span>
         ) : (
@@ -78,7 +81,7 @@ export function Avatar({
       {showPresence && !isGroup && (
         <span
           className={clsx(
-            "absolute bottom-0 right-0 rounded-full ring-bg",
+            "absolute -bottom-0.5 -right-0.5 rounded-full ring-surface",
             indicatorSizes[size],
             isOnline ? "bg-success" : "bg-faint"
           )}

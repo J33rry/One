@@ -7,7 +7,8 @@ import { mediaApi } from "@/lib/api/media";
 import { chatsApi, ChatParticipant } from "@/lib/api/chats";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar } from "@/components/ui/Avatar";
-import { Paperclip, Send, Loader2, X, File as FileIcon, Check, Smile, ArrowUp } from "lucide-react";
+import { Paperclip, Send, Loader2, X, File as FileIcon, Check, Smile, Mic, Square } from "lucide-react";
+import { formatDuration } from "@/lib/utils/time";
 import { useTyping } from "@/hooks/useTyping";
 import { useMessageActions } from "@/hooks/useMessageActions";
 import clsx from "clsx";
@@ -25,6 +26,8 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState<number | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
 
   // Mention autocomplete. `mentionAnchor` is the index of the '@' being typed.
   const [mentionAnchor, setMentionAnchor] = useState<number | null>(null);
@@ -291,9 +294,48 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
     if (textareaRef.current) textareaRef.current.focus();
   };
 
+  // Voice messages: record with MediaRecorder, then hand the clip to the same
+  // attachment path as any other file so it uploads and sends as audio.
+  const isRecording = recordingSeconds !== null;
+
+  useEffect(() => {
+    if (!isRecording) return;
+    const t = setInterval(() => setRecordingSeconds((s) => (s ?? 0) + 1), 1000);
+    return () => clearInterval(t);
+  }, [isRecording]);
+
+  useEffect(() => () => recorderRef.current?.stop(), []);
+
+  const toggleRecording = async () => {
+    if (recorderRef.current) {
+      recorderRef.current.stop();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        recorderRef.current = null;
+        setRecordingSeconds(null);
+        if (!chunks.length) return;
+        const type = recorder.mimeType || "audio/webm";
+        const ext = type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
+        setSelectedFile(new File(chunks, `voice-message.${ext}`, { type }));
+      };
+      recorderRef.current = recorder;
+      recorder.start();
+      setRecordingSeconds(0);
+    } catch {
+      alert("Microphone access is needed to record a voice message.");
+    }
+  };
+
   return (
     <div
-      className="p-4 bg-transparent shrink-0 flex flex-col relative z-20"
+      className="px-4 md:px-6 pb-4 pt-2 shrink-0 flex flex-col relative z-20"
       ref={containerRef}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -301,7 +343,7 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
     >
       {/* Drag & Drop Overlay */}
       {isDragging && (
-        <div className="absolute inset-4 z-40 glass-panel border-2 border-dashed border-accent rounded-3xl flex flex-col items-center justify-center text-accent pointer-events-none shadow-[0_0_30px_rgba(211,161,94,0.2)]">
+        <div className="absolute inset-2 z-40 bg-surface-2 border-2 border-dashed border-accent rounded-2xl flex flex-col items-center justify-center text-accent pointer-events-none">
           <Paperclip className="w-10 h-10 mb-3 animate-bounce" />
           <p className="text-sm font-bold tracking-wide">Drop file to attach</p>
         </div>
@@ -309,9 +351,9 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
 
       {/* Emoji Picker Floating Popover */}
       {showEmojiPicker && (
-        <div className="absolute bottom-full mb-4 left-4 z-50 shadow-2xl rounded-3xl overflow-hidden border border-border glass-panel">
+        <div className="absolute bottom-full mb-2 left-6 z-50 shadow-[var(--shadow-lg)] rounded-3xl overflow-hidden border border-border">
           <EmojiPicker
-            theme={Theme.DARK}
+            theme={Theme.AUTO}
             onEmojiClick={handleEmojiSelect}
             lazyLoadEmojis={true}
             searchDisabled={false}
@@ -322,19 +364,17 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
       <form
         onSubmit={handleSubmit}
         className={clsx(
-          "flex flex-col glass-pill transition-all duration-300 shadow-lg mx-auto w-full max-w-4xl relative overflow-visible",
-          editingMessage
-            ? "ring-2 ring-accent/50 shadow-[0_0_20px_rgba(211,161,94,0.2)]"
-            : replyingToMessage
-            ? "ring-2 ring-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.2)]"
-            : "ring-1 ring-border focus-within:ring-2 focus-within:ring-accent/50 focus-within:shadow-[0_0_20px_rgba(211,161,94,0.1)]"
+          "flex flex-col rounded-2xl bg-surface-2 transition-shadow w-full relative overflow-visible",
+          editingMessage || replyingToMessage
+            ? "ring-2 ring-accent/50"
+            : "focus-within:ring-2 focus-within:ring-accent/40"
         )}
       >
         {/* Reply Active Banner */}
         {replyingToMessage && (
-          <div className="flex items-center justify-between px-6 py-2.5 bg-blue-500/10 border-b border-blue-500/20 rounded-t-[9999px]">
-            <div className="flex flex-col min-w-0 pr-4">
-              <span className="text-[10px] font-bold tracking-widest uppercase text-blue-400">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
+            <div className="flex flex-col min-w-0 pr-4 border-l-[3px] border-accent pl-3">
+              <span className="text-xs font-semibold text-accent">
                 Replying to {replyingToMessage.sender?.displayName || "User"}
               </span>
               <span className="text-xs text-muted truncate mt-0.5">
@@ -344,7 +384,7 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
             <button
               type="button"
               onClick={() => clearActions()}
-              className="p-1.5 bg-blue-500/20 rounded-full text-blue-400 hover:text-white hover:bg-blue-500/40 transition-colors shrink-0"
+              className="p-1.5 rounded-full text-muted hover:text-fg hover:bg-surface-3 transition-colors shrink-0"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -353,9 +393,9 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
 
         {/* Edit Active Banner */}
         {editingMessage && (
-          <div className="flex items-center justify-between px-6 py-2.5 bg-accent/10 border-b border-accent/20 rounded-t-[9999px]">
-            <div className="flex flex-col min-w-0">
-              <span className="text-[10px] font-bold tracking-widest uppercase text-accent">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
+            <div className="flex flex-col min-w-0 border-l-[3px] border-accent pl-3">
+              <span className="text-xs font-semibold text-accent">
                 Editing Message
               </span>
             </div>
@@ -365,7 +405,7 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
                 clearActions();
                 setContent("");
               }}
-              className="p-1.5 bg-accent/20 rounded-full text-accent hover:text-white hover:bg-accent/40 transition-colors shrink-0"
+              className="p-1.5 rounded-full text-muted hover:text-fg hover:bg-surface-3 transition-colors shrink-0"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -374,13 +414,13 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
 
         {/* Selected File Preview Box */}
         {selectedFile && !editingMessage && (
-          <div className="relative self-start ml-6 mt-3 mb-1 rounded-2xl overflow-hidden bg-black/40 border border-border inline-flex items-center justify-center shadow-inner">
+          <div className="relative self-start ml-4 mt-3 mb-1 rounded-2xl overflow-hidden bg-surface border border-border inline-flex items-center justify-center">
             {previewUrl ? (
               <img src={previewUrl} alt="Preview" className="w-24 h-24 object-cover" />
             ) : (
               <div className="p-4 flex flex-col items-center justify-center w-24 h-24 text-muted">
                 <FileIcon className="w-7 h-7 mb-2 text-accent" />
-                <span className="text-[10px] max-w-[80px] truncate text-center font-mono">
+                <span className="text-[11px] max-w-[80px] truncate text-center">
                   {selectedFile.name}
                 </span>
               </div>
@@ -406,7 +446,7 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
           </div>
         )}
 
-        <div className="flex items-end gap-2 p-2 px-3">
+        <div className="flex items-end gap-1 py-1.5 px-2">
           {!editingMessage && (
             <>
               <input
@@ -420,10 +460,10 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="p-3 text-muted hover:text-accent transition-colors rounded-full hover:bg-surface-3/30 disabled:opacity-50"
+                className="p-2.5 text-accent hover:bg-surface-3 transition-colors rounded-xl disabled:opacity-50"
                 title="Attach file"
               >
-                <Paperclip className="w-5 h-5" />
+                <Paperclip className="w-6 h-6" strokeWidth={1.8} />
               </button>
             </>
           )}
@@ -431,14 +471,14 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
           <button
             type="button"
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="p-3 text-muted hover:text-accent transition-colors rounded-full hover:bg-surface-3/30"
-            title="Emoji Picker"
+            className="p-2.5 text-muted hover:text-accent transition-colors rounded-xl hover:bg-surface-3"
+            title="Emoji"
           >
-            <Smile className="w-5 h-5" />
+            <Smile className="w-6 h-6" strokeWidth={1.8} />
           </button>
 
           {mentionCandidates.length > 0 && (
-            <div className="absolute bottom-full left-0 mb-2 w-64 py-1 rounded-2xl glass-panel border border-border shadow-2xl z-40 overflow-hidden">
+            <div className="absolute bottom-full left-0 mb-2 w-64 py-1 rounded-2xl bg-surface border border-border shadow-[var(--shadow-lg)] z-40 overflow-hidden">
               {mentionCandidates.map((p, i) => (
                 <button
                   key={p.id}
@@ -453,8 +493,8 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
                   className={clsx(
                     "w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors",
                     i === mentionIndex
-                      ? "bg-accent/15 text-fg"
-                      : "text-muted hover:bg-surface-3/40",
+                      ? "bg-surface-2 text-fg"
+                      : "text-muted hover:bg-surface-2",
                   )}
                 >
                   <Avatar
@@ -485,38 +525,56 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
                 ? "Edit message..."
                 : selectedFile
                 ? "Add a caption..."
-                : "Message..."
+                : "Your message"
             }
-            className="flex-1 bg-transparent border-0 text-fg placeholder-faint resize-none max-h-32 min-h-[44px] focus:ring-0 py-3 px-2 text-[15px] leading-relaxed font-medium"
+            className="flex-1 bg-transparent border-0 text-fg placeholder:text-muted resize-none max-h-32 min-h-[44px] focus:outline-none py-2.5 px-2 text-[16px] leading-relaxed"
             rows={1}
             disabled={isUploading || editMessageMutation.isPending}
             autoFocus={!!editingMessage || !!replyingToMessage}
           />
 
+          {isRecording ? (
+            <span className="self-center flex items-center gap-2 px-2 text-sm font-medium text-danger tabular-nums">
+              <span className="h-2 w-2 rounded-full bg-danger animate-pulse" />
+              {formatDuration(recordingSeconds)}
+            </span>
+          ) : null}
+
+          {!editingMessage && (
+            <button
+              type="button"
+              onClick={toggleRecording}
+              disabled={isUploading || (!!selectedFile && !isRecording)}
+              className={clsx(
+                "p-2.5 rounded-xl transition-colors disabled:opacity-40",
+                isRecording ? "text-danger hover:bg-surface-3" : "text-accent hover:bg-surface-3"
+              )}
+              title={isRecording ? "Stop recording" : "Record voice message"}
+            >
+              {isRecording ? <Square className="w-6 h-6 fill-current" /> : <Mic className="w-6 h-6" strokeWidth={1.8} />}
+            </button>
+          )}
+
           <button
             type="submit"
             disabled={
+              isRecording ||
               (editingMessage ? !content.trim() : !content.trim() && !selectedFile) ||
               sendMessageMutation.isPending ||
               editMessageMutation.isPending ||
               isUploading
             }
-            className={clsx(
-              "w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 shadow-lg",
-              editingMessage || (content.trim() || selectedFile)
-                ? "bg-accent hover:bg-accent-hover text-accent-fg shadow-[0_0_15px_rgba(211,161,94,0.4)]"
-                : "bg-surface-3/50 text-muted cursor-not-allowed shadow-none"
-            )}
+            className="p-2.5 rounded-xl text-accent hover:bg-surface-3 transition-colors disabled:text-faint disabled:hover:bg-transparent"
             title="Send"
           >
             {sendMessageMutation.isPending ||
             editMessageMutation.isPending ||
             isUploading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-6 h-6 animate-spin" />
             ) : editingMessage ? (
-              <Check className="w-5 h-5" />
+              <Check className="w-6 h-6" />
             ) : (
-              <ArrowUp className="w-5 h-5 stroke-[2.5]" />
+              <Send className="w-6 h-6" strokeWidth={1.8} />
             )}
           </button>
         </div>
