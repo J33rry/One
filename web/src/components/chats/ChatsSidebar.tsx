@@ -9,7 +9,6 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import {
   Plus,
-  Search,
   MessageSquarePlus,
   Pin,
   PinOff,
@@ -24,30 +23,10 @@ import { useState, useEffect } from "react";
 import { NewChatModal } from "./NewChatModal";
 import { ChatFoldersRail } from "./ChatFoldersRail";
 import { FolderManagerModal } from "./FolderManagerModal";
-import { searchApi } from "@/lib/api/search";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Avatar } from "@/components/ui/Avatar";
 import { usePresence } from "@/hooks/usePresence";
 import { useSocketEvent } from "@/hooks/useSocket";
 import { ChatListSkeleton } from "@/components/ui/Skeleton";
-
-// The server marks matches with « » sentinels, so this is a plain split.
-function SearchSnippet({ text }: { text: string }) {
-  const parts = text.split(/«([^»]*)»/g);
-  return (
-    <>
-      {parts.map((part, i) =>
-        i % 2 === 1 ? (
-          <mark key={i} className="bg-accent/25 text-accent rounded px-0.5">
-            {part}
-          </mark>
-        ) : (
-          <span key={i}>{part}</span>
-        ),
-      )}
-    </>
-  );
-}
 
 // Mirrors the server's ordering: pinned first, then most recently active.
 function byPinnedThenRecent(a: Chat, b: Chat) {
@@ -67,7 +46,6 @@ export function ChatsSidebar() {
   const { isOnline } = usePresence();
   const queryClient = useQueryClient();
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "dm" | "group" | "archived">("all");
   const [menuChatId, setMenuChatId] = useState<string | null>(null);
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
@@ -79,15 +57,6 @@ export function ChatsSidebar() {
     queryKey: showArchived ? ["chats", { archived: true }] : ["chats"],
     queryFn: () => chatsApi.getChats(showArchived ? { archived: true } : undefined),
   });
-
-  // Global message search, alongside the instant client-side title filter.
-  const debouncedSearch = useDebouncedValue(searchQuery.trim(), 300);
-  const { data: searchData, isFetching: isSearchingMessages } = useQuery({
-    queryKey: ["search", "global", debouncedSearch],
-    queryFn: () => searchApi.messages(debouncedSearch),
-    enabled: debouncedSearch.length >= 2,
-  });
-  const messageResults = searchData?.results || [];
 
   const prefsMutation = useMutation({
     mutationFn: ({ chatId, prefs }: { chatId: string; prefs: ChatPreferences }) =>
@@ -185,7 +154,7 @@ export function ChatsSidebar() {
     return chat.participants?.find((p) => p.userId !== currentUser?.id)?.user;
   };
 
-  // Filter chats by tab & search query
+  // Filter chats by tab & folder
   const filteredChats = chats.filter((chat) => {
     if (activeTab === "dm" && chat.type !== "dm") return false;
     if (activeTab === "group" && chat.type !== "group") return false;
@@ -193,12 +162,7 @@ export function ChatsSidebar() {
     if (activeFolderId && !(chat.folderIds || []).includes(activeFolderId)) {
       return false;
     }
-
-    if (!searchQuery.trim()) return true;
-    const title = renderChatTitle(chat).toLowerCase();
-    const latestMsg = (getMessagePreview(chat.latestMessage) || "").toLowerCase();
-    const query = searchQuery.toLowerCase();
-    return title.includes(query) || latestMsg.includes(query);
+    return true;
   });
 
   return (
@@ -218,19 +182,8 @@ export function ChatsSidebar() {
       <NewChatModal isOpen={isNewChatOpen} onClose={() => setIsNewChatOpen(false)} />
       <FolderManagerModal isOpen={isFoldersOpen} onClose={() => setIsFoldersOpen(false)} />
 
-      {/* Search Input & Tabs */}
+      {/* Folders & Tabs */}
       <div className="p-4 shrink-0 space-y-4 z-10 bg-surface/40 backdrop-blur-md">
-        <div className="relative group">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search conversations..."
-            className="w-full bg-surface-2 border border-border text-fg placeholder-muted text-sm rounded-full pl-10 pr-4 py-2.5 transition-all duration-300 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 shadow-inner"
-          />
-          <Search className="absolute left-3.5 top-3 w-4 h-4 text-muted group-focus-within:text-accent transition-colors pointer-events-none" />
-        </div>
-
         {/* Folder rail — a second filter dimension above the type tabs */}
         {!showArchived && (
           <ChatFoldersRail
@@ -425,49 +378,13 @@ export function ChatsSidebar() {
               );
             })}
 
-            {/* Server-side message matches, below the chat-name matches */}
-            {searchQuery.trim().length >= 2 && (
-              <li className="pt-3">
-                <p className="px-3 pb-1.5 text-[10px] font-mono uppercase tracking-widest text-faint">
-                  Messages
-                </p>
-                {messageResults.length === 0 ? (
-                  <p className="px-3 py-2 text-xs text-faint italic">
-                    {isSearchingMessages ? "Searching…" : "No message matches."}
-                  </p>
-                ) : (
-                  <ul className="space-y-0.5">
-                    {messageResults.map((r) => (
-                      <li key={r.id}>
-                        <Link
-                          href={`/chats/${r.chatId}`}
-                          className="block px-3 py-2 rounded-xl hover:bg-surface-2/40 transition-colors"
-                        >
-                          <p className="text-[11px] font-semibold text-fg truncate">
-                            {r.sender.displayName}
-                            <span className="text-accent font-normal">
-                              {" · "}
-                              {r.chatName || "Direct message"}
-                            </span>
-                          </p>
-                          <p className="text-[11px] text-muted truncate">
-                            <SearchSnippet text={r.snippet || r.content || ""} />
-                          </p>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            )}
-
-            {filteredChats.length === 0 && searchQuery.trim().length < 2 && (
+            {filteredChats.length === 0 && (
               <div className="p-8 text-center space-y-4 animate-in-slide mt-10">
                 <div className="w-16 h-16 rounded-full glass-panel flex items-center justify-center mx-auto text-muted">
                   <MessageSquarePlus className="w-8 h-8" />
                 </div>
                 <p className="text-sm text-faint font-medium">
-                  {searchQuery ? "No matching conversations found." : "No chats yet. Start a conversation!"}
+                  No chats yet. Start a conversation!
                 </p>
               </div>
             )}

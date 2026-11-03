@@ -7,13 +7,6 @@ const router = Router();
 
 router.use(requireAuth());
 
-// Declared before /:chatId/messages/:messageId so "search" isn't read as an id.
-router.get(
-    "/:chatId/messages/search",
-    requireChatParticipant,
-    ctrl.searchInChat,
-);
-
 router.get("/:chatId/messages", requireChatParticipant, ctrl.getMessages);
 router.post("/:chatId/messages", requireChatParticipant, ctrl.sendMessage);
 router.patch(

@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { chatsApi } from "@/lib/api/chats";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, Info, Phone, Video, ArrowLeft, Settings, ShieldCheck, Search } from "lucide-react";
+import { Loader2, Info, Phone, Video, ArrowLeft, Settings, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { formatLastSeen } from "@/lib/utils/presence";
@@ -17,7 +17,6 @@ import { usePresence } from "@/hooks/usePresence";
 import { Badge } from "@/components/ui/Badge";
 import { ChatMediaPanel } from "./ChatMediaPanel";
 import { MediaLightbox } from "@/components/ui/MediaLightbox";
-import { MessageSearchPanel } from "./MessageSearchPanel";
 import clsx from "clsx";
 
 interface ChatMainProps {
@@ -29,7 +28,6 @@ export function ChatMain({ chatId }: ChatMainProps) {
   const { isOnline, getLastSeen } = usePresence();
   const [showInfo, setShowInfo] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
   const [infoLightbox, setInfoLightbox] = useState<{
     url: string;
     type: "image" | "video";
@@ -159,21 +157,6 @@ export function ChatMain({ chatId }: ChatMainProps) {
           </button>
           <div className="w-px h-6 bg-border mx-1" />
           <button
-            onClick={() => {
-              setShowSearch(true);
-              setShowInfo(false);
-            }}
-            className={clsx(
-              "p-2.5 rounded-xl transition-all duration-300",
-              showSearch
-                ? "text-accent bg-accent/10 border border-accent/20"
-                : "text-muted hover:text-fg hover:bg-surface-3/50"
-            )}
-            title="Search in conversation"
-          >
-            <Search className="w-5 h-5" />
-          </button>
-          <button
             onClick={() => setShowSettings(true)}
             className="p-2.5 rounded-xl text-muted hover:text-fg hover:bg-surface-3/50 transition-all duration-300"
             title="Chat Settings"
@@ -181,7 +164,7 @@ export function ChatMain({ chatId }: ChatMainProps) {
             <Settings className="w-5 h-5" />
           </button>
           <button
-            onClick={() => { setShowInfo(!showInfo); setShowSearch(false); }}
+            onClick={() => setShowInfo(!showInfo)}
             className={clsx(
               "p-2.5 rounded-xl transition-all duration-300",
               showInfo ? "text-accent bg-accent/10 border border-accent/20 shadow-[0_0_15px_rgba(211,161,94,0.2)]" : "text-muted hover:text-fg hover:bg-surface-3/50"
@@ -294,11 +277,6 @@ export function ChatMain({ chatId }: ChatMainProps) {
             </div>
           </div>
         </div>
-      )}
-
-      {/* In-conversation search */}
-      {showSearch && (
-        <MessageSearchPanel chatId={chatId} onClose={() => setShowSearch(false)} />
       )}
 
       {/* Settings Modal */}

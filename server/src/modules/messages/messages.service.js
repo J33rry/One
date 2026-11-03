@@ -46,10 +46,6 @@ async function syncMentions(messageId, chatId, content) {
     return userIds;
 }
 
-export async function searchMessages(userId, { q, chatId, before, limit }) {
-    return repo.searchMessages({ userId, chatId: chatId || null, query: q, before, limit });
-}
-
 export async function sendMessage(chatId, senderId, data) {
     const chat = await findChatById(chatId);
 
