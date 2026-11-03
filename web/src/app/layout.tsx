@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
+import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
 import Providers from "./providers";
@@ -22,6 +23,13 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
+// Wordmark face for the pebble title
+const nesiota = localFont({
+  src: "../../fonts/Nesiota-Regular.otf",
+  variable: "--font-nesiota",
+  display: "block",
+});
+
 // Applies an explicit saved theme before paint (no flash). When no choice is
 // stored, CSS prefers-color-scheme handles it — so this is a pure no-op then.
 const themeScript = `try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark'){document.documentElement.dataset.theme=t;}}catch(e){}`;
@@ -40,7 +48,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${nesiota.variable} h-full antialiased`}
     >
       <head>
         <Script id="theme-init" strategy="beforeInteractive">

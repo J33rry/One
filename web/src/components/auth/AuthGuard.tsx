@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2 } from "lucide-react";
+import { PebbleSplash } from "@/components/login/PebbleSplash";
 
 const PUBLIC_ROUTES = [
     "/login",
@@ -16,6 +16,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, isLoading } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
+    // The pebble splash covers the first auth check, then fades over the page.
+    const [splashDone, setSplashDone] = useState(false);
+    const hideSplash = useCallback(() => setSplashDone(true), []);
 
     useEffect(() => {
         if (isLoading) return;
@@ -29,18 +32,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         }
     }, [isAuthenticated, isLoading, pathname, router]);
 
-    if (isLoading) {
-        return (
-            <div className="h-full flex items-center justify-center bg-bg">
-                <Loader2 className="w-8 h-8 animate-spin text-accent" />
-            </div>
-        );
-    }
-
     const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
+    const allowed = !isLoading && isAuthenticated !== isPublicRoute;
 
-    if (!isAuthenticated && !isPublicRoute) return null;
-    if (isAuthenticated && isPublicRoute) return null;
-
-    return <>{children}</>;
+    return (
+        <>
+            {allowed && children}
+            {!splashDone && <PebbleSplash ready={!isLoading} onDone={hideSplash} />}
+        </>
+    );
 }

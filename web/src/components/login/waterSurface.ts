@@ -19,6 +19,8 @@ export interface WaterSurface {
   update(dt: number): void;
   /** Water heights along the left screen edge, one per row from the top (RGBA stride). */
   sampleLeftEdge(rows: number): Float32Array | null;
+  /** Strength of the ambient swell, 0 (glassy) to 1 (default). */
+  setAmbient(amount: number): void;
   /** Draw the water; `messages` is a canvas of bubbles refracted by the ripples. */
   render(time: number, messages?: TexImageSource | null): void;
   dispose(): void;
@@ -90,6 +92,9 @@ uniform float uTexel;
 uniform float uSlope;
 uniform sampler2D uMessages;
 uniform float uHasMessages;
+uniform float uLight;
+uniform float uRefract;
+uniform float uAmbient;
 
 const float C = ${C.toFixed(3)};
 const float A = ${A.toFixed(3)};
@@ -127,16 +132,18 @@ void main() {
   vec2 uv = vec2((p.x + uDomain * 0.5) / uDomain, (p.y - uYMin) / uDomain);
 
   vec2 e = vec2(uTexel, 0.0);
-  vec2 grad = vec2(
+  vec2 ripple = vec2(
     heightAt(uv + e.xy) - heightAt(uv - e.xy),
     heightAt(uv + e.yx) - heightAt(uv - e.yx)
   ) * uSlope;
 
   // Gentle ambient swell, mostly crests running across the view.
-  grad += swell(p, vec2(0.12, 1.0), 26.0, 1.3, 0.0016);
-  grad += swell(p, vec2(-0.3, 1.0), 41.0, 1.9, 0.0009);
-  grad += swell(p, vec2(0.6, 1.0), 63.0, 2.6, 0.0005);
-  grad += swell(p, vec2(1.0, 0.25), 17.0, 0.7, 0.0009);
+  vec2 ambient = swell(p, vec2(0.12, 1.0), 26.0, 1.3, 0.0016);
+  ambient += swell(p, vec2(-0.3, 1.0), 41.0, 1.9, 0.0009);
+  ambient += swell(p, vec2(0.6, 1.0), 63.0, 2.6, 0.0005);
+  ambient += swell(p, vec2(1.0, 0.25), 17.0, 0.7, 0.0009);
+  ambient *= uAmbient;
+  vec2 grad = ripple + ambient;
 
   vec3 n = normalize(vec3(-grad.x, 1.0, -grad.y));
   vec3 v = normalize(vec3(-p.x, EYE, -p.y));
@@ -144,12 +151,25 @@ void main() {
   vec3 r = reflect(-v, n);
   r.y = abs(r.y);
 
-  vec3 col = mix(DEEP, sky(r), fresnel);
-  col = 1.0 - exp(-col * 1.3);
+  vec3 col;
+  if (uLight > 0.5) {
+    // Pale milky surface: slopes facing the soft key light brighten, those
+    // turned away pick up grey, so rings read as soft grey/white bands.
+    // Ripples get the full contrast; the swell stays a faint sheen.
+    vec2 tiltDir = vec2(0.3, -0.9);
+    float facing = dot(ripple, tiltDir) * 9.0 + dot(ambient, tiltDir) * 1.6;
+    col = vec3(0.952, 0.954, 0.962);
+    col += vec3(0.05) * clamp(facing, 0.0, 1.0) - vec3(0.2, 0.2, 0.19) * clamp(-facing, 0.0, 1.2);
+    col += vec3(0.5) * pow(clamp(facing - 0.6, 0.0, 1.0), 2.0);
+    col = min(col, vec3(1.0));
+  } else {
+    col = mix(DEEP, sky(r), fresnel);
+    col = 1.0 - exp(-col * 1.3);
+  }
 
   if (uHasMessages > 0.5) {
     // Messages float on the surface: the ripple slope bends them like refraction.
-    vec4 msg = texture(uMessages, vUv + grad * 0.012);
+    vec4 msg = texture(uMessages, vUv + grad * uRefract);
     msg.rgb *= 1.0 + clamp(grad.y * 0.35, -0.2, 0.2);
     col = col * (1.0 - msg.a) + msg.rgb;
   }
@@ -196,7 +216,17 @@ function compile(gl: WebGL2RenderingContext, vs: string, fs: string) {
   return program;
 }
 
-export function createWaterSurface(canvas: HTMLCanvasElement): WaterSurface | null {
+export interface WaterOptions {
+  /** White water instead of the moonlit night. */
+  light?: boolean;
+  /** How far ripple slopes bend the overlay layer. */
+  refract?: number;
+}
+
+export function createWaterSurface(
+  canvas: HTMLCanvasElement,
+  { light = false, refract = 0.012 }: WaterOptions = {}
+): WaterSurface | null {
   const gl = canvas.getContext("webgl2", { antialias: false, alpha: false, premultipliedAlpha: false });
   if (!gl) return null;
   // Full float targets also let us read the edge heights back for the shore.
@@ -257,6 +287,7 @@ export function createWaterSurface(canvas: HTMLCanvasElement): WaterSurface | nu
   let domain = 1;
   let yMin = 0;
   let accumulator = 0;
+  let ambientAmount = 1;
 
   // Run one simulation pass reading the current texture into the other one.
   const simPass = (program: WebGLProgram, setUniforms: () => void) => {
@@ -309,6 +340,10 @@ export function createWaterSurface(canvas: HTMLCanvasElement): WaterSurface | nu
       }
     },
 
+    setAmbient(amount) {
+      ambientAmount = amount;
+    },
+
     render(time, messages) {
       const program = programs.render;
       if (messages) {
@@ -334,6 +369,9 @@ export function createWaterSurface(canvas: HTMLCanvasElement): WaterSurface | nu
       gl.uniform1f(gl.getUniformLocation(program, "uSlope"), SLOPE);
       gl.uniform1i(gl.getUniformLocation(program, "uMessages"), 1);
       gl.uniform1f(gl.getUniformLocation(program, "uHasMessages"), messages ? 1 : 0);
+      gl.uniform1f(gl.getUniformLocation(program, "uLight"), light ? 1 : 0);
+      gl.uniform1f(gl.getUniformLocation(program, "uRefract"), refract);
+      gl.uniform1f(gl.getUniformLocation(program, "uAmbient"), ambientAmount);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     },
 
